@@ -628,11 +628,6 @@ export class YuStreamEditor {
         });
     }
 
-    /** 销毁实例时执行 _unbind（若实现了解绑逻辑可在此移除事件监听等） */
-    destroy() {
-        this._unbind?.();
-    }
-
     /** 在指定容器内查找 .yu-stream-editor-echarts-wrap，逐个用 ECharts 渲染（每帧挂一个，避免等全部挂完才一起出来） */
     _mountEchartsInElement(container) {
         if (!container || typeof echarts === 'undefined') return;

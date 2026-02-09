@@ -1,0 +1,913 @@
+/**
+ * Yu流式编辑器样式
+ * 所有编辑器相关类名以 yu-stream-editor 为前缀，便于作用域隔离。
+ * 含：编辑区、气泡/插入/表格/图片工具栏、dialog 弹窗、流式面板等。
+ */
+/* 白色浅色主题 */
+:root {
+	--bg: #f8fafc;
+	--surface: #ffffff;
+	--border: #e2e8f0;
+	--text: #1e293b;
+	--text-muted: #64748b;
+	--accent: #2563eb;
+	--accent-hover: #3b82f6;
+	--toolbar-bg: #ffffff;
+	--editor-bg: #ffffff;
+	--font-sans: 'DM Sans', 'LXGW WenKai', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--font-sans);
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+/* select option 下拉选项样式（与白色主题一致） */
+select option {
+	background: var(--surface);
+	color: var(--text);
+	padding: 8px 12px;
+	font-size: 13px;
+	font-family: var(--font-sans);
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+	background: rgba(37, 99, 235, 0.1);
+	color: var(--accent);
+}
+
+select optgroup {
+	background: var(--surface);
+	color: var(--text-muted);
+	font-size: 12px;
+	padding: 4px 8px;
+}
+
+#app {
+	margin: 0 auto;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	max-width: 90%;
+}
+
+#editor-container {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+/* Markdown 反显框 */
+.yu-markdown-preview-wrap {
+	margin-top: 16px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	overflow: hidden;
+	background: var(--surface);
+}
+.yu-markdown-preview-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--border);
+	background: var(--bg);
+}
+.yu-markdown-preview-title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-muted);
+}
+.yu-markdown-preview-header button {
+	padding: 4px 12px;
+	font-size: 12px;
+	border-radius: 6px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+}
+.yu-markdown-preview-header button:hover {
+	background: var(--accent);
+	color: #fff;
+	border-color: var(--accent);
+}
+.yu-markdown-preview-box {
+	display: block;
+	width: 100%;
+	min-height: 200px;
+	max-height: 360px;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 12px 14px;
+	font-family: var(--font-mono);
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--text);
+	background: var(--surface);
+	border: none;
+	resize: vertical;
+	outline: none;
+	overflow-y: auto;
+}
+.yu-markdown-preview-box::placeholder {
+	color: var(--text-muted);
+}
+
+.yu-stream-editor-editor-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 0;
+}
+
+.yu-stream-editor-editor-actions button {
+	padding: 8px 16px;
+	font-size: 13px;
+	font-weight: 600;
+	border-radius: 6px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+}
+
+.yu-stream-editor-editor-actions button:hover {
+	background: var(--accent);
+	color: #fff;
+	border-color: var(--accent);
+}
+
+.yu-stream-editor-editor-actions button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.yu-stream-editor-bubble-toolbar-sep {
+	width: 1px;
+	height: 20px;
+	background: var(--border);
+	margin: 0 4px;
+}
+
+.yu-stream-editor-editor-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 0;
+}
+
+.yu-stream-editor-editor-actions button {
+	padding: 8px 16px;
+	font-size: 13px;
+	font-weight: 600;
+	border-radius: 6px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+}
+
+.yu-stream-editor-editor-actions button:hover {
+	background: var(--accent);
+	color: #fff;
+	border-color: var(--accent);
+}
+
+.yu-stream-editor-editor-actions button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.yu-stream-editor-bubble-extra-btn {
+	padding: 4px 8px;
+	font-size: 12px;
+	border-radius: 5px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+}
+
+.yu-stream-editor-bubble-extra-btn:hover {
+	background: var(--border);
+	color: var(--accent);
+}
+
+/* 光标处插入工具栏（仅光标、无选区时显示） */
+.yu-stream-editor-insert-toolbar {
+	position: fixed;
+	z-index: 100;
+	display: none;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	background: var(--toolbar-bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.yu-stream-editor-insert-toolbar.is-visible {
+	display: flex;
+}
+
+.yu-stream-editor-insert-toolbar-btn {
+	padding: 5px 12px;
+	font-size: 12px;
+	border-radius: 6px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+}
+
+.yu-stream-editor-insert-toolbar-btn:hover {
+	background: var(--border);
+	color: var(--accent);
+}
+
+.yu-stream-editor-table-toolbar-sep {
+	width: 1px;
+	height: 20px;
+	background: var(--border);
+	margin: 0 4px;
+}
+
+.yu-stream-editor-table-toolbar button {
+	padding: 4px 8px;
+	font-size: 11px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.yu-stream-editor-table-toolbar button:hover {
+	background: var(--border);
+	color: var(--accent);
+}
+
+/* 工具栏（浮动条等仍使用以下 class，顶部工具栏已移除） */
+.yu-stream-editor-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+	background: var(--toolbar-bg);
+	border-bottom: 1px solid var(--border);
+	position: sticky;
+	top: 0;
+	z-index: 10;
+}
+
+.yu-stream-editor-toolbar-group {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.yu-stream-editor-toolbar-group label {
+	color: var(--text-muted);
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.yu-stream-editor-toolbar select,
+.yu-stream-editor-toolbar input[type='color'] {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 6px;
+	padding: 6px 28px 6px 10px;
+	font-size: 13px;
+	cursor: pointer;
+	min-height: 32px;
+	appearance: none;
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 8px center;
+}
+
+.yu-stream-editor-toolbar select:focus,
+.yu-stream-editor-toolbar input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.yu-stream-editor-toolbar input[type='color'] {
+	width: 28px;
+	height: 28px;
+	padding: 2px;
+	cursor: pointer;
+}
+
+.yu-stream-editor-toolbar button {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 6px;
+	padding: 6px 10px;
+	font-size: 13px;
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.yu-stream-editor-toolbar button:hover {
+	background: var(--border);
+	color: var(--accent);
+}
+
+.yu-stream-editor-toolbar button#bold {
+	font-weight: 700;
+}
+.yu-stream-editor-toolbar button#italic {
+	font-style: italic;
+}
+.yu-stream-editor-toolbar button#underline {
+	text-decoration: underline;
+}
+
+.yu-stream-editor-toolbar-divider {
+	width: 1px;
+	height: 24px;
+	background: var(--border);
+	margin: 0 4px;
+}
+
+.yu-stream-editor-table-tools select {
+	min-width: 100px;
+}
+
+/* 编辑区 */
+.yu-stream-editor-editor-wrap {
+	flex: 1;
+	min-height: 320px;
+	min-width: 0; /* 允许 flex 子项收缩，避免长内容撑开 */
+	padding: 16px 0px;
+	position: relative;
+	overflow: hidden;
+}
+
+/* 点击/选中表格时出现的表格操作框 */
+.yu-stream-editor-table-toolbar {
+	position: fixed;
+	z-index: 100;
+	display: none;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	background: var(--toolbar-bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.yu-stream-editor-table-toolbar.is-visible {
+	display: flex;
+}
+
+.yu-stream-editor-table-toolbar-label {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-right: 4px;
+}
+
+.yu-stream-editor-table-toolbar select,
+.yu-stream-editor-table-toolbar input[type='color'] {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 6px;
+	padding: 5px 26px 5px 8px;
+	font-size: 12px;
+	cursor: pointer;
+	min-height: 28px;
+	appearance: none;
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 6px center;
+}
+
+.yu-stream-editor-table-toolbar input[type='color'] {
+	width: 26px;
+	height: 26px;
+	padding: 2px;
+	background-image: none;
+}
+
+.yu-stream-editor-table-toolbar-color-label {
+	font-size: 11px;
+	color: var(--text-muted);
+	margin-left: 4px;
+}
+
+.yu-stream-editor-table-toolbar select:focus,
+.yu-stream-editor-table-toolbar input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.yu-stream-editor-table-toolbar-align-btns {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.yu-stream-editor-table-toolbar-align-btns button {
+	padding: 4px 8px;
+	font-size: 12px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.yu-stream-editor-table-toolbar-align-btns button:hover {
+	background: var(--border);
+	color: var(--accent);
+}
+
+.yu-stream-editor-table-toolbar-align-btns button.is-active {
+	background: var(--accent);
+	color: #fff;
+	border-color: var(--accent);
+}
+
+/* 选中图片时出现的图片设置工具栏 */
+.yu-stream-editor-image-toolbar {
+	position: fixed;
+	z-index: 100;
+	display: none;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	background: var(--toolbar-bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.yu-stream-editor-image-toolbar.is-visible {
+	display: flex;
+}
+
+.yu-stream-editor-image-toolbar-label {
+	font-size: 12px;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.yu-stream-editor-image-toolbar input[type='text'] {
+	width: 72px;
+	padding: 4px 8px;
+	font-size: 12px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 6px;
+}
+
+.yu-stream-editor-image-toolbar input[type='text']:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.yu-stream-editor-image-toolbar-align-btns {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.yu-stream-editor-image-toolbar-align-btns button {
+	padding: 4px 8px;
+	font-size: 12px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.yu-stream-editor-image-toolbar-align-btns button:hover {
+	background: var(--border);
+	color: var(--accent);
+}
+
+.yu-stream-editor-image-toolbar-align-btns button.is-active {
+	background: var(--accent);
+	color: #fff;
+	border-color: var(--accent);
+}
+
+/* 选中文字后出现在选区上方的浮动工具栏 */
+.yu-stream-editor-bubble-toolbar {
+	position: fixed;
+	z-index: 100;
+	display: none;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	background: var(--toolbar-bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.yu-stream-editor-bubble-toolbar.is-visible {
+	display: flex;
+}
+
+.yu-stream-editor-bubble-toolbar select,
+.yu-stream-editor-bubble-toolbar input[type='color'] {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 6px;
+	padding: 5px 26px 5px 8px;
+	font-size: 12px;
+	cursor: pointer;
+	min-height: 28px;
+	appearance: none;
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 6px center;
+}
+
+.yu-stream-editor-bubble-toolbar input[type='color'] {
+	width: 26px;
+	height: 26px;
+	padding: 2px;
+	background-image: none;
+}
+
+.yu-stream-editor-bubble-toolbar select:focus,
+.yu-stream-editor-bubble-toolbar input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.yu-stream-editor-bubble-toolbar button {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	color: var(--text);
+	border-radius: 6px;
+	padding: 5px 10px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.yu-stream-editor-bubble-toolbar button:hover {
+	background: var(--border);
+	color: var(--accent);
+}
+
+.yu-stream-editor-bubble-toolbar .yu-stream-editor-bubble-bold {
+	font-weight: 700;
+}
+.yu-stream-editor-bubble-toolbar .yu-stream-editor-bubble-italic {
+	font-style: italic;
+}
+.yu-stream-editor-bubble-toolbar .yu-stream-editor-bubble-underline {
+	text-decoration: underline;
+}
+
+.yu-stream-editor-editor {
+	min-height: 280px;
+	padding: 16px 20px;
+	background: var(--editor-bg);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	color: var(--text);
+	font-size: 15px;
+	line-height: 1.7;
+	outline: none;
+	max-width: 100%;
+	overflow-wrap: break-word;
+	word-break: break-word;
+	overflow-x: auto;
+}
+
+.yu-stream-editor-editor:empty::before {
+	content: attr(data-placeholder);
+	color: var(--text-muted);
+}
+
+.yu-stream-editor-editor:focus {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* 编辑器内图片：不超出内容区域，按比例缩放，过高时限制最大高度 */
+.yu-stream-editor-editor img {
+	max-width: 100%;
+	max-height: 70vh;
+	height: auto;
+	object-fit: contain;
+	vertical-align: middle;
+}
+
+/* 编辑器内表格样式 */
+.yu-stream-editor-editor table {
+	border-collapse: collapse;
+	width: 100%;
+	margin: 12px 0;
+	font-size: 14px;
+}
+
+/* 表格选中效果 */
+.yu-stream-editor-editor table.is-selected {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+.yu-stream-editor-editor table.full-border th,
+.yu-stream-editor-editor table.full-border td,
+.yu-stream-editor-editor table:not([data-border]) th,
+.yu-stream-editor-editor table:not([data-border]) td {
+	border: 1px solid var(--border);
+}
+
+.yu-stream-editor-editor table.outer-border th,
+.yu-stream-editor-editor table.outer-border td {
+	border: none;
+}
+
+.yu-stream-editor-editor table.outer-border {
+	border: 1px solid var(--border);
+}
+
+.yu-stream-editor-editor table.none-border th,
+.yu-stream-editor-editor table.none-border td {
+	border: none;
+}
+
+.yu-stream-editor-editor th,
+.yu-stream-editor-editor td {
+	padding: 8px 12px;
+	text-align: left;
+	line-height: 1.5;
+	min-height: 36px;
+	box-sizing: border-box;
+}
+
+.yu-stream-editor-editor th {
+	background: rgba(37, 99, 235, 0.08);
+	font-weight: 600;
+}
+
+.yu-stream-editor-editor table[data-align='left'] th,
+.yu-stream-editor-editor table[data-align='left'] td {
+	text-align: left;
+}
+
+.yu-stream-editor-editor table[data-align='center'] th,
+.yu-stream-editor-editor table[data-align='center'] td {
+	text-align: center;
+}
+
+.yu-stream-editor-editor table[data-align='right'] th,
+.yu-stream-editor-editor table[data-align='right'] td {
+	text-align: right;
+}
+
+.yu-stream-editor-editor h1,
+.yu-stream-editor-editor h2,
+.yu-stream-editor-editor h3 {
+	margin-top: 1.2em;
+	margin-bottom: 0.5em;
+}
+.yu-stream-editor-editor h1 {
+	font-size: 1.5em;
+}
+.yu-stream-editor-editor h2 {
+	font-size: 1.3em;
+}
+.yu-stream-editor-editor h3 {
+	font-size: 1.15em;
+}
+.yu-stream-editor-editor p {
+	margin: 0.5em 0;
+}
+.yu-stream-editor-editor ul,
+.yu-stream-editor-editor ol {
+	margin: 0.5em 0;
+	padding-left: 1.5em;
+}
+.yu-stream-editor-editor code {
+	font-family: var(--font-mono);
+	background: var(--surface);
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 0.9em;
+	overflow-wrap: break-word;
+	word-break: break-all;
+}
+.yu-stream-editor-editor pre {
+	background: var(--surface);
+	padding: 12px;
+	border-radius: 8px;
+	overflow-x: auto;
+	max-width: 100%;
+}
+.yu-stream-editor-editor pre code {
+	background: none;
+	padding: 0;
+	overflow-wrap: normal;
+	word-break: normal;
+}
+.yu-stream-editor-editor a {
+	overflow-wrap: break-word;
+	word-break: break-word;
+}
+.yu-stream-editor-editor blockquote {
+	border-left: 4px solid var(--accent);
+	margin: 0.5em 0;
+	padding-left: 1em;
+	color: var(--text-muted);
+}
+
+/* ECharts 图表块：仅渲染图表，不展示代码；修改图表请改 Markdown 后重新渲染 */
+.yu-stream-editor-editor .yu-stream-editor-echarts-wrap {
+	margin: 1em 0;
+	max-width: 100%;
+	border-radius: 8px;
+	overflow: hidden;
+	border: 1px solid var(--border);
+}
+.yu-stream-editor-editor .yu-stream-editor-echarts-container {
+	min-height: 200px;
+}
+
+/* 流式过程中 \`\`\`echarts 先以代码块显示，结束后再替换为图表 */
+.yu-stream-editor-editor .yu-stream-editor-echarts-pending {
+	margin: 1em 0;
+	max-width: 100%;
+	background: var(--surface);
+	padding: 12px;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+}
+.yu-stream-editor-editor .yu-stream-editor-echarts-pending code {
+	font-family: var(--font-mono);
+	font-size: 13px;
+	background: none;
+	padding: 0;
+}
+
+/* 流式输入面板 */
+.yu-stream-editor-stream-panel {
+	padding: 16px;
+	border-top: 1px solid var(--border);
+	background: var(--surface);
+	border-radius: 0 0 10px 0;
+}
+
+.yu-stream-editor-stream-header {
+	color: var(--text-muted);
+	font-size: 12px;
+	margin-bottom: 8px;
+}
+
+.yu-stream-editor-stream-input {
+	width: 100%;
+	min-height: 100px;
+	padding: 12px;
+	background: var(--editor-bg);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	color: var(--text);
+	font-family: var(--font-mono);
+	font-size: 13px;
+	resize: vertical;
+	margin-bottom: 8px;
+}
+
+.yu-stream-editor-stream-input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.yu-stream-editor-stream-panel button {
+	background: var(--accent);
+	color: #fff;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.yu-stream-editor-stream-panel button:hover {
+	background: var(--accent-hover);
+}
+
+/* 弹窗（原生 dialog） */
+.yu-stream-editor-dialog {
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+	min-width: 320px;
+	max-width: 90vw;
+}
+
+.yu-stream-editor-dialog::backdrop {
+	background: rgba(0, 0, 0, 0.35);
+}
+
+.yu-stream-editor-dialog form {
+	padding: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.yu-stream-editor-dialog-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--text);
+	margin: 0 0 4px 0;
+}
+
+.yu-stream-editor-dialog-body {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.yu-stream-editor-dialog-label {
+	font-size: 13px;
+	color: var(--text-muted);
+	display: block;
+	margin-bottom: 4px;
+}
+
+.yu-stream-editor-dialog-input {
+	width: 100%;
+	padding: 8px 12px;
+	font-size: 14px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface);
+	color: var(--text);
+}
+
+.yu-stream-editor-dialog-input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.yu-stream-editor-dialog-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.yu-stream-editor-dialog-btn {
+	padding: 8px 16px;
+	font-size: 13px;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+}
+
+.yu-stream-editor-dialog-btn:hover {
+	background: var(--border);
+}
+
+.yu-stream-editor-dialog-btn-primary {
+	background: var(--accent);
+	color: #fff;
+	border-color: var(--accent);
+}
+
+.yu-stream-editor-dialog-btn-primary:hover {
+	background: var(--accent-hover);
+	border-color: var(--accent-hover);
+}

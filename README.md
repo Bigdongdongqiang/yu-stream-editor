@@ -284,3 +284,9 @@ editor.notifyChange();
 
 - 示例 Markdown 在 `src/sampleMarkdown.js`，可按需替换或从接口获取。
 - 本仓库将「模拟流式」按钮的文案简化为「模拟流式」；流式 API（`appendStreamChunk`、`resetStream`、`getStreamBuffer`）与 `getHtml`、`getMarkdown` 在示例中挂到 `window` 上，便于控制台调试或外部脚本调用。
+
+
+
+https://github.com/user-attachments/assets/52d7b07c-aa62-4cff-9cbc-d6f0fac44ead
+
+

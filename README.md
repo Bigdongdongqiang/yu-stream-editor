@@ -38,10 +38,10 @@ npm run dev
 ## 基本使用
 
 ```js
-import { YuStreamEditor } from './Editor.js';
+import { YuStreamEditor } from './Editor.js'
 
-const container = document.getElementById('editor-container');
-const editor = new YuStreamEditor({ container });
+const container = document.getElementById('editor-container')
+const editor = new YuStreamEditor({ container })
 ```
 
 编辑器 DOM 由类内部生成并挂载到 `container` 中。
@@ -52,18 +52,18 @@ const editor = new YuStreamEditor({ container });
 
 `new YuStreamEditor(options)` 支持的 `options` 字段：
 
-| 选项 | 类型 | 说明 |
-|------|------|------|
-| `container` | `HTMLElement` | 挂载编辑器的容器，必填（或回退到 `#app`） |
-| `tooltips` | `Object` | 覆盖默认 tooltip / placeholder 文案，键见下方「Tooltip 配置」 |
-| `hooks` | `Object` | 生命周期与事件钩子，键见下方「钩子」 |
-| `maxLength` | `number` | 最大字数（纯文本，0 表示不限制） |
-| `pastePlainText` | `boolean` | 粘贴时是否转为纯文本（默认 `false`） |
-| `chartEnabled` | `boolean` | 是否将 \`\`\`echarts 渲染为图表（默认 `true`）。设为 `false` 时按普通代码块显示，不渲染 ECharts。可运行时修改 `editor.chartEnabled`。 |
-| `anchors` | `Array` | 自定义锚点（卡片），见下方「自定义锚点（卡片）」：将指定 \`\`\`language 围栏替换为不可编辑卡片，getMarkdown 时还原。 |
-| `readonly` | `boolean` | 是否只读（默认 `false`），与 `mode` 二选一即可 |
-| `mode` | `'edit' \| 'readonly'` | 模式：`'edit'` 编辑模式，`'readonly'` 只读模式；优先于 `readonly` |
-| `tools` | `Object` | 工具栏可配置与扩展，见下方「工具栏 tools」 |
+| 选项             | 类型                   | 说明                                                                                                                                  |
+| ---------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `container`      | `HTMLElement`          | 挂载编辑器的容器，必填（或回退到 `#app`）                                                                                             |
+| `tooltips`       | `Object`               | 覆盖默认 tooltip / placeholder 文案，键见下方「Tooltip 配置」                                                                         |
+| `hooks`          | `Object`               | 生命周期与事件钩子，键见下方「钩子」                                                                                                  |
+| `maxLength`      | `number`               | 最大字数（纯文本，0 表示不限制）                                                                                                      |
+| `pastePlainText` | `boolean`              | 粘贴时是否转为纯文本（默认 `false`）                                                                                                  |
+| `chartEnabled`   | `boolean`              | 是否将 \`\`\`echarts 渲染为图表（默认 `true`）。设为 `false` 时按普通代码块显示，不渲染 ECharts。可运行时修改 `editor.chartEnabled`。 |
+| `anchors`        | `Array`                | 自定义锚点（卡片），见下方「自定义锚点（卡片）」：将指定 \`\`\`language 围栏替换为不可编辑卡片，getMarkdown 时还原。                  |
+| `readonly`       | `boolean`              | 是否只读（默认 `false`），与 `mode` 二选一即可                                                                                        |
+| `mode`           | `'edit' \| 'readonly'` | 模式：`'edit'` 编辑模式，`'readonly'` 只读模式；优先于 `readonly`                                                                     |
+| `tools`          | `Object`               | 工具栏可配置与扩展，见下方「工具栏 tools」                                                                                            |
 
 ### 工具栏可配置与扩展（tools）
 
@@ -82,39 +82,61 @@ const editor = new YuStreamEditor({ container });
 
 ```js
 // Vue 3 卡片示例（需在页面引入 Vue；也可直接使用 src/anchors/vue-card.js）
-anchors: [{
-  id: 'vue-card',
-  language: 'vue-card',
-  render() { return '<div class="vue-card-mount"></div>'; },
-  mount(el, source) {
-    el.innerHTML = '';
-    const app = Vue.createApp({ template: '<div class="my-vue-card">' + source + '</div>' });
-    app.mount(el);
-  },
-}]
+anchors: [
+	{
+		id: 'vue-card',
+		language: 'vue-card',
+		render() {
+			return '<div class="vue-card-mount"></div>'
+		},
+		mount(el, source) {
+			el.innerHTML = ''
+			const app = Vue.createApp({
+				template: '<div class="my-vue-card">' + source + '</div>',
+			})
+			app.mount(el)
+		},
+	},
+]
 
 // React 18 卡片示例（需在页面引入 React、ReactDOM；也可直接使用 src/anchors/react-card.jsx）
-anchors: [{
-  id: 'react-card',
-  language: 'react-card',
-  render() { return '<div class="react-card-mount"></div>'; },
-  mount(el, source) {
-    el.innerHTML = '';
-    const root = ReactDOM.createRoot(el);
-    root.render(React.createElement('div', { className: 'my-react-card' }, source));
-  },
-}]
+anchors: [
+	{
+		id: 'react-card',
+		language: 'react-card',
+		render() {
+			return '<div class="react-card-mount"></div>'
+		},
+		mount(el, source) {
+			el.innerHTML = ''
+			const root = ReactDOM.createRoot(el)
+			root.render(
+				React.createElement(
+					'div',
+					{ className: 'my-react-card' },
+					source,
+				),
+			)
+		},
+	},
+]
 ```
 
 示例（仅 HTML 的卡片，如自定义 mermaid）：
 
 ```js
 const editor = new YuStreamEditor({
-  container: document.getElementById('editor-container'),
-  anchors: [
-    { id: 'mermaid', language: 'mermaid', render(source) { return '<div class="my-mermaid-card">' + source + '</div>'; } },
-  ],
-});
+	container: document.getElementById('editor-container'),
+	anchors: [
+		{
+			id: 'mermaid',
+			language: 'mermaid',
+			render(source) {
+				return '<div class="my-mermaid-card">' + source + '</div>'
+			},
+		},
+	],
+})
 ```
 
 内置的 \`\`\`echarts 图表块逻辑独立于 anchors；若希望 echarts 也走锚点（卡片）流程，可设 `chartEnabled: false` 并添加 `{ id: 'echarts', language: 'echarts', render: ... }` 自行渲染。
@@ -122,22 +144,35 @@ const editor = new YuStreamEditor({
 示例：
 
 ```js
-import { YuStreamEditor, DEFAULT_INSERT_TOOLS } from './Editor.js';
+import { YuStreamEditor, DEFAULT_INSERT_TOOLS } from './Editor.js'
 
 const editor = new YuStreamEditor({
-  container: document.getElementById('editor-container'),
-  tools: {
-    insert: ['link', 'table', 'image'],  // 调整顺序并隐藏分割线
-    insertExtra: [
-      { id: 'custom', label: '自定义', title: '自定义操作', onClick(ed) { /* 使用 ed.getMarkdown()、ed.setMarkdown()、ed.exec() 等 */ } },
-    ],
-    bubbleExtra: [
-      { id: 'strike', label: '删除线', onClick(ed) { ed.exec('strikeThrough'); } },
-    ],
-    tableExtra: [],
-    imageExtra: [],
-  },
-});
+	container: document.getElementById('editor-container'),
+	tools: {
+		insert: ['link', 'table', 'image'], // 调整顺序并隐藏分割线
+		insertExtra: [
+			{
+				id: 'custom',
+				label: '自定义',
+				title: '自定义操作',
+				onClick(ed) {
+					/* 使用 ed.getMarkdown()、ed.setMarkdown()、ed.exec() 等 */
+				},
+			},
+		],
+		bubbleExtra: [
+			{
+				id: 'strike',
+				label: '删除线',
+				onClick(ed) {
+					ed.exec('strikeThrough')
+				},
+			},
+		],
+		tableExtra: [],
+		imageExtra: [],
+	},
+})
 ```
 
 ### 更多扩展点
@@ -151,19 +186,19 @@ const editor = new YuStreamEditor({
 通过 `options.tooltips` 覆盖部分或全部提示文案，未传入的键使用默认值。可从 `Editor.js` 导入 `DEFAULT_TOOLTIPS` 查看全部 key：
 
 ```js
-import { YuStreamEditor, DEFAULT_TOOLTIPS } from './Editor.js';
+import { YuStreamEditor, DEFAULT_TOOLTIPS } from './Editor.js'
 
 const editor = new YuStreamEditor({
-  container: document.getElementById('editor-container'),
-  tooltips: {
-    editorPlaceholder: '请输入内容…',
-    insertImage: '插入图片',
-    insertTable: '插入表格',
-    bubbleBold: '粗体',
-    tableAddRow: '下方插入行',
-    // 其他 key 见 DEFAULT_TOOLTIPS
-  },
-});
+	container: document.getElementById('editor-container'),
+	tooltips: {
+		editorPlaceholder: '请输入内容…',
+		insertImage: '插入图片',
+		insertTable: '插入表格',
+		bubbleBold: '粗体',
+		tableAddRow: '下方插入行',
+		// 其他 key 见 DEFAULT_TOOLTIPS
+	},
+})
 ```
 
 常用 key：`editorPlaceholder`、`insertImage`、`insertLink`、`insertTable`、`insertHr`、`bubbleFontName`、`bubbleFontSize`、`bubbleBold`、`bubbleItalic`、`bubbleUnderline`、`bubbleH1`～`bubbleH3`、`bubbleUl`、`bubbleOl`；表格相关 `tableBorder`、`tableAlign`、`tableAddRow`、`tableDelRow`、`tableAddCol`、`tableDelCol` 等；图片相关 `imageWidth`、`imageHeight`、`imageAlignLeft` / `Center` / `Right`。
@@ -172,33 +207,33 @@ const editor = new YuStreamEditor({
 
 通过 `options.hooks` 在关键时机执行自定义逻辑，每个钩子会收到 `(editor)`（当前编辑器实例）：
 
-| 钩子 | 调用时机 |
-|------|----------|
-| `beforeRender(editor)` | 清空 container 之前 |
-| `afterRender(editor)` | 编辑区 DOM 插入 container 之后、事件绑定之前 |
-| `onMount(editor)` | 事件绑定完成之后 |
-| `onInit(editor)` | 初始化全部完成（只读等设置也已应用） |
-| `onFocus(editor)` | 编辑区获得焦点 |
-| `onBlur(editor)` | 编辑区失去焦点 |
-| `onChange(editor)` | 内容变更（输入、粘贴、插入等） |
+| 钩子                   | 调用时机                                     |
+| ---------------------- | -------------------------------------------- |
+| `beforeRender(editor)` | 清空 container 之前                          |
+| `afterRender(editor)`  | 编辑区 DOM 插入 container 之后、事件绑定之前 |
+| `onMount(editor)`      | 事件绑定完成之后                             |
+| `onInit(editor)`       | 初始化全部完成（只读等设置也已应用）         |
+| `onFocus(editor)`      | 编辑区获得焦点                               |
+| `onBlur(editor)`       | 编辑区失去焦点                               |
+| `onChange(editor)`     | 内容变更（输入、粘贴、插入等）               |
 
 示例：
 
 ```js
 const editor = new YuStreamEditor({
-  container: document.getElementById('editor-container'),
-  hooks: {
-    onInit(editor) {
-      console.log('编辑器就绪');
-    },
-    onFocus(editor) {
-      console.log('获得焦点');
-    },
-    onChange(editor) {
-      console.log('内容变更', editor.getMarkdown());
-    },
-  },
-});
+	container: document.getElementById('editor-container'),
+	hooks: {
+		onInit(editor) {
+			console.log('编辑器就绪')
+		},
+		onFocus(editor) {
+			console.log('获得焦点')
+		},
+		onChange(editor) {
+			console.log('内容变更', editor.getMarkdown())
+		},
+	},
+})
 ```
 
 ---
@@ -207,36 +242,36 @@ const editor = new YuStreamEditor({
 
 ### 内容与流式
 
-| 方法 | 说明 |
-|------|------|
-| `getMarkdown()` | 将当前内容转为 Markdown 字符串；**导出为 Markdown 时，图表以 \`\`\`echarts 代码块形式保留，自定义卡片以 \`\`\`language 围栏保留，可正常渲染** |
-| `setMarkdown(md)` | 将 Markdown 解析为 HTML 并写入编辑器 |
-| `appendStreamChunk(chunk)` | 追加一段 Markdown 到流式缓冲并重新解析渲染（用于流式接口逐段返回） |
-| `notifyChange()` | 通知内容已变更（触发 onChange 钩子），流式结束或程序化改内容后可由外部调用 |
-| `resetStream()` | 清空流式缓冲（不清空编辑器 DOM） |
-| `getStreamBuffer()` | 获取当前流式缓冲内容 |
-| `clear()` | 清空编辑器内容并清空流式缓冲 |
+| 方法                       | 说明                                                                                                                                          |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getMarkdown()`            | 将当前内容转为 Markdown 字符串；**导出为 Markdown 时，图表以 \`\`\`echarts 代码块形式保留，自定义卡片以 \`\`\`language 围栏保留，可正常渲染** |
+| `setMarkdown(md)`          | 将 Markdown 解析为 HTML 并写入编辑器                                                                                                          |
+| `appendStreamChunk(chunk)` | 追加一段 Markdown 到流式缓冲并重新解析渲染（用于流式接口逐段返回）                                                                            |
+| `notifyChange()`           | 通知内容已变更（触发 onChange 钩子），流式结束或程序化改内容后可由外部调用                                                                    |
+| `resetStream()`            | 清空流式缓冲（不清空编辑器 DOM）                                                                                                              |
+| `getStreamBuffer()`        | 获取当前流式缓冲内容                                                                                                                          |
+| `clear()`                  | 清空编辑器内容并清空流式缓冲                                                                                                                  |
 
 ### 插入与编辑
 
-| 方法 | 说明 |
-|------|------|
-| `insertImage(url, width?, height?)` | 在光标处插入图片 |
-| `insertLink(url, text?)` | 插入链接（有选区则把选区设为链接） |
-| `insertTable(rows?, cols?)` | 在光标处插入表格（默认 3×3） |
-| `insertHr()` | 插入分割线 |
-| `undo()` / `redo()` | 撤销 / 重做 |
-| `setHeading(level)` | 将选区设为标题（1～3） |
+| 方法                                | 说明                               |
+| ----------------------------------- | ---------------------------------- |
+| `insertImage(url, width?, height?)` | 在光标处插入图片                   |
+| `insertLink(url, text?)`            | 插入链接（有选区则把选区设为链接） |
+| `insertTable(rows?, cols?)`         | 在光标处插入表格（默认 3×3）       |
+| `insertHr()`                        | 插入分割线                         |
+| `undo()` / `redo()`                 | 撤销 / 重做                        |
+| `setHeading(level)`                 | 将选区设为标题（1～3）             |
 
 ### 状态与只读
 
-| 方法 | 说明 |
-|------|------|
-| `getWordCount()` | 获取纯文本字数（去空白） |
-| `getMode()` | 返回当前模式：`'edit'` 或 `'readonly'` |
-| `setMode(mode)` | 设置模式：`setMode('edit')` 编辑模式，`setMode('readonly')` 只读模式 |
-| `setReadonly(flag)` | 设置 / 取消只读（与 `setMode('readonly'/'edit')` 等价） |
-| `readonly` | 可读写的只读状态属性（`true` / `false`） |
+| 方法                | 说明                                                                 |
+| ------------------- | -------------------------------------------------------------------- |
+| `getWordCount()`    | 获取纯文本字数（去空白）                                             |
+| `getMode()`         | 返回当前模式：`'edit'` 或 `'readonly'`                               |
+| `setMode(mode)`     | 设置模式：`setMode('edit')` 编辑模式，`setMode('readonly')` 只读模式 |
+| `setReadonly(flag)` | 设置 / 取消只读（与 `setMode('readonly'/'edit')` 等价）              |
+| `readonly`          | 可读写的只读状态属性（`true` / `false`）                             |
 
 ---
 
@@ -248,29 +283,31 @@ const editor = new YuStreamEditor({
 
 ```js
 // runStreamDemo 定义在 main.js，或从 main.js 导出后使用
-await runStreamDemo(editor, '## 标题\n\n一段**加粗**文字。');
-await runStreamDemo(editor, markdownString, { chunkSize: 3, delayMs: 50 });
+await runStreamDemo(editor, '## 标题\n\n一段**加粗**文字。')
+await runStreamDemo(editor, markdownString, { chunkSize: 3, delayMs: 50 })
 ```
 
 **2. 真实流式接口（AsyncIterable）**
 
 ```js
 async function* streamFromFetch() {
-  const res = await fetch('/api/stream');
-  const reader = res.body.pipeThrough(new TextDecoderStream())[Symbol.asyncIterator]();
-  for await (const chunk of reader) yield chunk;
+	const res = await fetch('/api/stream')
+	const reader = res.body
+		.pipeThrough(new TextDecoderStream())
+		[Symbol.asyncIterator]()
+	for await (const chunk of reader) yield chunk
 }
-await runStreamDemo(editor, streamFromFetch());
+await runStreamDemo(editor, streamFromFetch())
 ```
 
 **3. 手动逐段追加**
 
 ```js
-editor.resetStream();
+editor.resetStream()
 for (const chunk of someChunks) {
-  editor.appendStreamChunk(chunk);
+	editor.appendStreamChunk(chunk)
 }
-editor.notifyChange();
+editor.notifyChange()
 ```
 
 ---
@@ -306,12 +343,12 @@ editor.notifyChange();
 
 **按图表类型的提示词示例：**
 
-| 需求 | 提示词示例 |
-|------|------------|
-| 饼图 | 请用 Markdown 写一段，包含一个 **饼图**。使用 \`\`\`echarts 代码块，内容为 ECharts option 的 **纯 JSON**，包含 `series: [{ type: "pie", data: [{ value, name }, ...] }]`，可加 `tooltip`、`legend`。 |
+| 需求   | 提示词示例                                                                                                                                                                                                                          |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 饼图   | 请用 Markdown 写一段，包含一个 **饼图**。使用 \`\`\`echarts 代码块，内容为 ECharts option 的 **纯 JSON**，包含 `series: [{ type: "pie", data: [{ value, name }, ...] }]`，可加 `tooltip`、`legend`。                                |
 | 柱状图 | 请用 Markdown 写一段，包含一个 **柱状图**。使用 \`\`\`echarts 代码块，内容为 ECharts option 的 **纯 JSON**，包含 `xAxis: { type: "category", data: [...] }`、`yAxis: { type: "value" }`、`series: [{ type: "bar", data: [...] }]`。 |
-| 折线图 | 请用 Markdown 写一段，包含一个 **折线图**。使用 \`\`\`echarts 代码块，内容为 ECharts option 的 **纯 JSON**，包含 `xAxis`、`yAxis`、`series: [{ type: "line", data: [...] }]`，可设 `xAxis.boundaryGap: false`。 |
-| 多系列 | 在 \`\`\`echarts 的 JSON 里，`series` 写多个对象，例如两个折线：`"series": [{ "name": "销量", "type": "line", "data": [...] }, { "name": "成本", "type": "line", "data": [...] }]`。 |
+| 折线图 | 请用 Markdown 写一段，包含一个 **折线图**。使用 \`\`\`echarts 代码块，内容为 ECharts option 的 **纯 JSON**，包含 `xAxis`、`yAxis`、`series: [{ type: "line", data: [...] }]`，可设 `xAxis.boundaryGap: false`。                     |
+| 多系列 | 在 \`\`\`echarts 的 JSON 里，`series` 写多个对象，例如两个折线：`"series": [{ "name": "销量", "type": "line", "data": [...] }, { "name": "成本", "type": "line", "data": [...] }]`。                                                |
 
 **强调输出格式（避免模型输出成 JS）：**
 
@@ -355,9 +392,3 @@ editor.notifyChange();
 - 示例 Markdown 在 `src/sampleMarkdown.js`，可按需替换或从接口获取。
 - 卡片渲染示例：`src/anchors/vue-card.js`（Vue 3）、`src/anchors/react-card.jsx`（React 18），可在 `main.js` 中作为 `anchors` 传入编辑器。
 - 本仓库将「模拟流式」按钮的文案简化为「模拟流式」；流式 API（`appendStreamChunk`、`resetStream`、`getStreamBuffer`）与 `getMarkdown` 在示例中挂到 `window` 上，便于控制台调试或外部脚本调用。
-
-
-
-https://github.com/user-attachments/assets/52d7b07c-aa62-4cff-9cbc-d6f0fac44ead
-
-

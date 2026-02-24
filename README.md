@@ -50,6 +50,7 @@ const editor = new YuStreamEditor({ container });
 | `hooks` | `Object` | 生命周期与事件钩子，键见下方「钩子」 |
 | `maxLength` | `number` | 最大字数（纯文本，0 表示不限制） |
 | `pastePlainText` | `boolean` | 粘贴时是否转为纯文本（默认 `false`） |
+| `chartEnabled` | `boolean` | 是否将 \`\`\`echarts 渲染为图表（默认 `true`）。设为 `false` 时按普通代码块显示，不渲染 ECharts。可运行时修改 `editor.chartEnabled`。 |
 | `readonly` | `boolean` | 是否只读（默认 `false`），与 `mode` 二选一即可 |
 | `mode` | `'edit' \| 'readonly'` | 模式：`'edit'` 编辑模式，`'readonly'` 只读模式；优先于 `readonly` |
 | `tools` | `Object` | 工具栏可配置与扩展，见下方「工具栏 tools」 |
@@ -71,7 +72,7 @@ const editor = new YuStreamEditor({
   tools: {
     insert: ['link', 'table', 'image'],  // 调整顺序并隐藏分割线
     insertExtra: [
-      { id: 'custom', label: '自定义', title: '自定义操作', onClick(ed) { /* 使用 ed.getHtml()、ed.setHtml()、ed.exec() 等 */ } },
+      { id: 'custom', label: '自定义', title: '自定义操作', onClick(ed) { /* 使用 ed.getMarkdown()、ed.setHtml()、ed.exec() 等 */ } },
     ],
     bubbleExtra: [
       { id: 'strike', label: '删除线', onClick(ed) { ed.exec('strikeThrough'); } },
@@ -137,7 +138,7 @@ const editor = new YuStreamEditor({
       console.log('获得焦点');
     },
     onChange(editor) {
-      console.log('内容变更', editor.getHtml());
+      console.log('内容变更', editor.getMarkdown());
     },
   },
 });
@@ -151,9 +152,9 @@ const editor = new YuStreamEditor({
 
 | 方法 | 说明 |
 |------|------|
-| `getHtml()` | 获取当前 HTML 字符串 |
 | `setHtml(html)` | 设置编辑器 HTML |
-| `getMarkdown()` | 将当前内容转为 Markdown 字符串 |
+| `getHtml()` | 获取当前内容为 HTML 字符串；**导出为 HTML 时，ECharts 图表会转为 base64 图片嵌入** |
+| `getMarkdown()` | 将当前内容转为 Markdown 字符串；**导出为 Markdown 时，图表以 \`\`\`echarts 代码块形式保留，可正常渲染** |
 | `setMarkdown(md)` | 将 Markdown 解析为 HTML 并写入编辑器 |
 | `appendStreamChunk(chunk)` | 追加一段 Markdown 到流式缓冲并重新解析渲染（用于流式接口逐段返回） |
 | `notifyChange()` | 通知内容已变更（触发 onChange 钩子），流式结束或程序化改内容后可由外部调用 |
@@ -263,6 +264,11 @@ editor.notifyChange();
 
 配置项 `chartEnabled` 为 `false` 时，\`\`\`echarts 会按普通代码块显示，不渲染成图表。
 
+### 导出说明
+
+- **导出为 HTML**（`getHtml()`）：ECharts 图表会转为 **base64 图片** 嵌入，便于在无 ECharts 环境中展示或存档。
+- **导出为 Markdown**（`getMarkdown()`）：图表以 **\`\`\`echarts 代码块** 形式保留，可再次导入后正常渲染为图表。
+
 ---
 
 ## 样式与类名
@@ -283,7 +289,7 @@ editor.notifyChange();
 ## 开发说明
 
 - 示例 Markdown 在 `src/sampleMarkdown.js`，可按需替换或从接口获取。
-- 本仓库将「模拟流式」按钮的文案简化为「模拟流式」；流式 API（`appendStreamChunk`、`resetStream`、`getStreamBuffer`）与 `getHtml`、`getMarkdown` 在示例中挂到 `window` 上，便于控制台调试或外部脚本调用。
+- 本仓库将「模拟流式」按钮的文案简化为「模拟流式」；流式 API（`appendStreamChunk`、`resetStream`、`getStreamBuffer`）与 `getMarkdown` 在示例中挂到 `window` 上，便于控制台调试或外部脚本调用。
 
 
 

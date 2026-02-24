@@ -16,6 +16,11 @@
 	--editor-bg: #ffffff;
 	--font-sans: 'DM Sans', 'LXGW WenKai', system-ui, sans-serif;
 	--font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+	/* 代码块 */
+	--code-bg: #f1f5f9;
+	--code-border: #e2e8f0;
+	--code-lang-bg: rgba(37, 99, 235, 0.1);
+	--code-lang-text: #2563eb;
 }
 
 * {
@@ -594,10 +599,10 @@ select optgroup {
 
 .yu-stream-editor-editor {
 	min-height: 280px;
-	padding: 16px 20px;
+	padding: 20px 24px;
 	background: var(--editor-bg);
 	border: 1px solid var(--border);
-	border-radius: 10px;
+	border-radius: 12px;
 	color: var(--text);
 	font-size: 15px;
 	line-height: 1.7;
@@ -606,6 +611,9 @@ select optgroup {
 	overflow-wrap: break-word;
 	word-break: break-word;
 	overflow-x: auto;
+	transition:
+		border-color 0.15s ease,
+		box-shadow 0.15s ease;
 }
 
 .yu-stream-editor-editor:empty::before {
@@ -615,7 +623,7 @@ select optgroup {
 
 .yu-stream-editor-editor:focus {
 	border-color: var(--accent);
-	box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 /* 编辑器内图片：不超出内容区域，按比例缩放，过高时限制最大高度 */
@@ -715,27 +723,82 @@ select optgroup {
 	margin: 0.5em 0;
 	padding-left: 1.5em;
 }
+/* 行内代码 */
 .yu-stream-editor-editor code {
 	font-family: var(--font-mono);
-	background: var(--surface);
+	background: var(--code-bg);
+	color: var(--text);
 	padding: 2px 6px;
 	border-radius: 4px;
 	font-size: 0.9em;
 	overflow-wrap: break-word;
 	word-break: break-all;
+	border: 1px solid var(--code-border);
 }
-.yu-stream-editor-editor pre {
-	background: var(--surface);
-	padding: 12px;
-	border-radius: 8px;
+
+.yu-stream-editor-editor .language-echarts,
+.yu-stream-editor-echarts-pending code {
+	border: none;
+}
+
+/* 代码块容器（带语言标签） */
+.yu-stream-editor-editor .yu-code-block {
+	margin: 1em 0;
+	max-width: 100%;
+	border: 1px solid var(--code-border);
+	border-radius: 10px;
+	overflow: hidden;
+	background: var(--code-bg);
+}
+.yu-stream-editor-editor .yu-code-block .yu-code-lang {
+	display: inline-block;
+	padding: 4px 10px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	color: var(--code-lang-text);
+	background: var(--code-lang-bg);
+	border-bottom: 1px solid var(--code-border);
+	font-family: var(--font-sans);
+}
+.yu-stream-editor-editor .yu-code-block pre {
+	margin: 0;
+	padding: 14px 16px;
+	background: var(--code-bg);
+	border-radius: 0;
 	overflow-x: auto;
 	max-width: 100%;
+	border: none;
+}
+.yu-stream-editor-editor .yu-code-block pre code {
+	font-family: var(--font-mono);
+	font-size: 13px;
+	line-height: 1.6;
+	background: none;
+	padding: 0;
+	overflow-wrap: normal;
+	word-break: normal;
+	color: var(--text);
+}
+/* 无包装的 pre（兼容旧内容或默认 marked 输出） */
+.yu-stream-editor-editor pre {
+	background: var(--code-bg);
+	padding: 14px 16px;
+	border-radius: 10px;
+	overflow-x: auto;
+	max-width: 100%;
+	border: 1px solid var(--code-border);
+	margin: 1em 0;
 }
 .yu-stream-editor-editor pre code {
 	background: none;
 	padding: 0;
 	overflow-wrap: normal;
 	word-break: normal;
+	font-family: var(--font-mono);
+	font-size: 13px;
+	line-height: 1.6;
 }
 .yu-stream-editor-editor a {
 	overflow-wrap: break-word;

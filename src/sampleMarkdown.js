@@ -14,7 +14,7 @@ export const SAMPLE_MARKDOWN = `## 流式渲染示例
 | a1  | b1  | c1  |
 | a2  | b2  | c2  |
 
-![示例图片](https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fimage109.360doc.com%2FDownloadImg%2F2025%2F04%2F0321%2F296122601_4_20250403090445718&refer=http%3A%2F%2Fimage109.360doc.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=auto?sec=1773207427&t=fa4dbd80a12cb1ca14eb71dc5d097588)
+![示例图片](https://res.ennew.com/image/png/95c7ffa1fb5ada138890c01b56cc0fb9.png?optimize=true)
 
 \`行内代码\` 与 \`\`\` 代码块 \`\`\` 均支持。
 

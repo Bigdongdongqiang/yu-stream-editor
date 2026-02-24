@@ -23,16 +23,24 @@ marked.use({
             if (lang === 'echarts' || lang === 'chart') {
                 try {
                     const option = JSON.parse(code.trim());
-                    const optionBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(option))));
+                    // 存图表的 markdown 行（代码块原始内容）的 base64，导出时保留用户格式
+                    const markdownCode = code.trim();
+                    const optionBase64 = btoa(unescape(encodeURIComponent(markdownCode)));
                     if (this.options.chartRenderAsChart === false) {
                         const pretty = JSON.stringify(option, null, 2);
                         const escapedCode = pretty.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                         return `<pre class="yu-stream-editor-echarts-pending" contenteditable="false" data-echarts-option="${optionBase64}"><code>${escapedCode}</code></pre>`;
                     }
                     return `<div class="yu-stream-editor-echarts-wrap" contenteditable="false" data-echarts-option="${optionBase64}"><div class="yu-stream-editor-echarts-container" style="width:100%;height:300px"></div></div>`;
-                } catch (_) { /* 非合法 JSON 时按普通代码块显示 */ }
+                } catch (_) {
+                    /* 非合法 JSON 时按普通代码块显示 */
+                    return `<pre class="yu-stream-editor-echarts-pending" contenteditable="false" ><code>${code}</code></pre>`;
+                }
             }
-            return false;
+            // 普通代码块：带语言标签的包装，便于样式与高亮
+            const langLabel = (infostring || '').trim() || 'text';
+            const safeLang = langLabel.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            return `<div class="yu-code-block" contenteditable="false"><span class="yu-code-lang">${safeLang}</span><pre><code class="language-${safeLang}">${escaped}</code></pre></div>`;
         }
     }
 });
@@ -51,6 +59,20 @@ turndownService.addRule('echartsPending', {
             const opt = decodeURIComponent(escape(atob(optBase64)));
             return '\n\n```echarts\n' + opt + '\n```\n\n';
         } catch (_) { return ''; }
+    }
+});
+
+// 图表不走 turndown：getMarkdown 里会先把图表 div 换成占位符，转完后再把占位符替换为 ```echarts 块
+
+// 带语言标签的代码块 .yu-code-block 导出为 ```lang 围栏
+turndownService.addRule('yuCodeBlock', {
+    filter: (node) => node.nodeName === 'DIV' && node.classList?.contains('yu-code-block'),
+    replacement: (_content, node) => {
+        const langSpan = node.querySelector('.yu-code-lang');
+        const codeEl = node.querySelector('pre code');
+        const lang = (langSpan?.textContent || '').trim() || 'text';
+        const code = codeEl?.textContent ?? '';
+        return '\n\n```' + lang + '\n' + code + '\n```\n\n';
     }
 });
 
@@ -183,7 +205,7 @@ const DEFAULT_INSERT_TOOLS = ['image', 'link', 'table', 'hr'];
  * @param {function(Event, YuStreamEditor): boolean|void} [options.onPaste] - 粘贴钩子；若返回 true 则由调用方处理粘贴（内部不再处理）
  * @param {Array<{ key: string, ctrlKey?: boolean, metaKey?: boolean, handler: function(YuStreamEditor) }} [options.shortcuts] - 自定义快捷键，与内置 Ctrl+B/I/U 一并生效
  * @param {Object} [options.hooks] - 钩子：onInit(editor)、onMount(editor)、beforeRender(editor)、afterRender(editor)、onFocus(editor)、onBlur(editor)、onChange(editor)
-* @param {boolean} [options.chartEnabled=true] - 是否将 \`\`\`echarts 代码块渲染为图表；设为 false 时按普通代码块显示
+* @param {boolean} [options.chartEnabled=true] - 是否将 \`\`\`echarts 代码块渲染为 ECharts 图表。`true`（默认）= 渲染为图表；`false` = 按普通代码块显示（不渲染图表）。可运行时修改 `editor.chartEnabled = false`，下次 setMarkdown/流式解析时生效。
    * @param {boolean} [options.readonly] - 是否只读（与 mode 二选一）
    * @param {'edit'|'readonly'} [options.mode] - 模式：'edit' 编辑模式，'readonly' 只读模式；优先于 options.readonly
  */
@@ -628,13 +650,38 @@ export class YuStreamEditor {
         });
     }
 
-    /** 在指定容器内查找 .yu-stream-editor-echarts-wrap，逐个用 ECharts 渲染（每帧挂一个，避免等全部挂完才一起出来） */
-    _mountEchartsInElement(container) {
+    /** 清洗 option 中会被 ECharts 当作文本渲染的 false，避免图表上出现 "false" 字样 */
+    _sanitizeEchartsOptionForDisplay(option) {
+        if (!option || typeof option !== 'object') return;
+        if (option.title && option.title.text === false) option.title.text = '';
+        if (option.legend && Array.isArray(option.legend.data)) {
+            option.legend.data = option.legend.data.map((item) => (item === false ? '' : item));
+        }
+        if (Array.isArray(option.series)) {
+            option.series.forEach((s) => {
+                if (s && s.name === false) s.name = '';
+                if (s && s.data) {
+                    s.data = s.data.map((d) => {
+                        if (d && typeof d === 'object' && d.name === false) return { ...d, name: '' };
+                        return d === false ? '' : d;
+                    });
+                }
+            });
+        }
+    }
+
+    /** 在指定容器内查找 .yu-stream-editor-echarts-wrap，逐个用 ECharts 渲染。 */
+    _mountEchartsInElement(container, opts) {
         if (!container || typeof echarts === 'undefined') return;
-        const wraps = Array.from(container.querySelectorAll('.yu-stream-editor-echarts-wrap'));
+        const fromIndex = (opts && opts.fromIndex) || 0;
+        const allWraps = Array.from(container.querySelectorAll('.yu-stream-editor-echarts-wrap'));
+        const wraps = fromIndex > 0 ? allWraps.slice(fromIndex) : allWraps;
+        if (wraps.length === 0) return;
+        const chartMountDelayMs = 120; // 每块图表间隔（毫秒），避免一起蹦出来
         const mountOne = (index) => {
             if (index >= wraps.length) return;
             const wrap = wraps[index];
+            if (wrap._echartsInstance) { scheduleNext(index + 1); return; }
             const optBase64 = wrap.getAttribute('data-echarts-option');
             if (!optBase64) { scheduleNext(index + 1); return; }
             let option;
@@ -648,16 +695,25 @@ export class YuStreamEditor {
             const chartEl = wrap.querySelector('.yu-stream-editor-echarts-container');
             if (!chartEl) { scheduleNext(index + 1); return; }
             try {
+                this._sanitizeEchartsOptionForDisplay(option);
                 const chart = echarts.init(chartEl);
                 chart.setOption(option);
                 wrap._echartsInstance = chart;
-            } catch (_) { }
+                const loading = chartEl.querySelector('.yu-stream-editor-echarts-loading');
+                if (loading) loading.remove();
+            } catch (_) {
+                const loading = chartEl.querySelector('.yu-stream-editor-echarts-loading');
+                if (loading) loading.remove();
+            }
             scheduleNext(index + 1);
         };
         const scheduleNext = (nextIndex) => {
-            if (nextIndex < wraps.length) requestAnimationFrame(() => mountOne(nextIndex));
+            if (nextIndex >= wraps.length) return;
+            const delay = nextIndex === 0 ? 0 : chartMountDelayMs;
+            if (delay === 0) mountOne(0);
+            else setTimeout(() => mountOne(nextIndex), delay);
         };
-        if (wraps.length > 0) mountOne(0);
+        if (wraps.length > 0) scheduleNext(0);
     }
 
     /** 将一段 Markdown 解析为 HTML 并追加到编辑器末尾，不替换已有内容。用于非流式一次性追加。 */
@@ -697,15 +753,14 @@ export class YuStreamEditor {
         this._updateWordCount();
     }
 
-    /** 将 chunk 追加到流式缓冲并整体重新用 Markdown 解析渲染编辑器内容（流式接口逐段返回时使用）。流式过程中 \`\`\`echarts 先以代码块显示，结束后再替换为图表。 */
+    /** 将 chunk 追加到流式缓冲并整体重新用 Markdown 解析渲染。流式过程中 \`\`\`echarts 先以代码块显示，结束后调用 setReadonly(false) 时再统一替换为图表并挂载。 */
     appendStreamChunk(chunk) {
         if (typeof chunk !== 'string' || !this.editor) return;
         this.streamBuffer += chunk;
         try {
             marked.defaults.chartEnabled = this.chartEnabled;
-            marked.defaults.chartRenderAsChart = (this.getMode() !== 'readonly');
+            marked.defaults.chartRenderAsChart = this.getMode() !== 'readonly'; // 只读（流式）时先出代码块，结束切编辑后再出图表
             this.editor.innerHTML = marked.parse(this.streamBuffer);
-            if (this.getMode() !== 'readonly') this._mountEchartsInElement(this.editor);
         } catch (_) { }
     }
 
@@ -719,24 +774,55 @@ export class YuStreamEditor {
         return this.streamBuffer;
     }
 
-    /** 返回编辑器当前内容的 HTML 字符串；其中的 ECharts 图表会转为图片（data URL）嵌入 */
+    /** 返回编辑器当前内容的 HTML 字符串；其中的 ECharts 图表会转为 base64 图片（data URL）嵌入 */
     getHtml() {
         if (!this.editor) return '';
         return this._serializeEditorHtmlWithChartsAsImages(this.editor);
     }
 
-    /** 使用 Turndown 将编辑器 HTML 转为 Markdown；其中的 ECharts 图表会先转为图片再导出为 ![图表](data:image/...) */
+    /** 使用 Turndown 将编辑器 HTML 转为 Markdown；图表不走 turndown，先替换为占位符，转完后再替换为 ```echarts 块 */
     getMarkdown() {
         if (!this.editor) return '';
         try {
-            const html = this._serializeEditorHtmlWithChartsAsImages(this.editor);
-            return turndownService.turndown(html).trim();
+            const clone = this.editor.cloneNode(true);
+            const chartBlocks = [];
+            const placeholders = [];
+            this._collectChartBlocksAndReplaceWithPlaceholders(clone, chartBlocks, placeholders);
+            let md = turndownService.turndown(clone).trim();
+            placeholders.forEach((placeholder, i) => {
+                const block = chartBlocks[i] != null ? '```echarts\n' + chartBlocks[i] + '\n```' : '';
+                // Turndown 会把 _ 转成 \_，所以用正则同时匹配字面量和转义形式（___ 与 \_\_\_）
+                const regex = new RegExp(placeholder.replace(/_/g, '(?:_|\\\\_)'), 'g');
+                md = md.replace(regex, () => block);
+            });
+            // 所有反引号 ` 统一加转义为 \`，便于安全存储/展示，setMarkdown 时会统一反转义
+            return md.replace(/`/g, '\\`');
         } catch (_) {
             return '';
         }
     }
 
-    /** 从图表 wrap 节点获取当前渲染图为 data URL（优先 ECharts getDataURL，否则取 canvas.toDataURL） */
+    /** 在容器内查找图表 wrap，收集 data-echarts-option 解码后的内容到 chartBlocks，并用占位符段落替换该节点 */
+    _collectChartBlocksAndReplaceWithPlaceholders(container, chartBlocks, placeholders) {
+        const wraps = container.querySelectorAll ? container.querySelectorAll('.yu-stream-editor-echarts-wrap') : [];
+        const list = Array.from(wraps).filter((el) => el.getAttribute('data-echarts-option'));
+        list.forEach((wrap) => {
+            const optBase64 = wrap.getAttribute('data-echarts-option');
+            try {
+                const opt = decodeURIComponent(escape(atob(optBase64)));
+                chartBlocks.push(opt);
+            } catch (_) {
+                chartBlocks.push('');
+            }
+            const placeholder = '___YU_ECHARTS_' + placeholders.length + '___';
+            placeholders.push(placeholder);
+            const p = document.createElement('p');
+            p.textContent = placeholder;
+            wrap.parentNode.replaceChild(p, wrap);
+        });
+    }
+
+    /** 从图表 wrap 节点获取当前渲染图为 data URL（base64），供 getHtml 序列化时嵌入 */
     _getChartDataUrl(wrap) {
         try {
             const chart = wrap._echartsInstance;
@@ -748,7 +834,7 @@ export class YuStreamEditor {
         return '';
     }
 
-    /** 序列化编辑区为 HTML，遇到 ECharts 图表块时用 <img src="data:image/..."> 替换，供 getHtml/getMarkdown 使用 */
+    /** 序列化编辑区为 HTML，遇到 ECharts 图表块时用 <img src="data:image/png;base64,..."> 替换，供 getHtml 使用 */
     _serializeEditorHtmlWithChartsAsImages(node) {
         if (node.nodeType === Node.TEXT_NODE) {
             return node.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -779,6 +865,40 @@ export class YuStreamEditor {
         return out;
     }
 
+    /** 序列化编辑区为 HTML（供 getMarkdown）：图表块保留为带 data-echarts-option 的 div，由 turndown 转为 ```echarts 代码块 */
+    _serializeEditorHtmlForMarkdown(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            return node.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return '';
+        const el = node;
+        const hasContainerAsDirectChild = Array.from(el.children).some((c) => c.classList?.contains('yu-stream-editor-echarts-container'));
+        const isChartWrap = el.classList?.contains('yu-stream-editor-echarts-wrap') ||
+            (hasContainerAsDirectChild && el.getAttribute('data-echarts-option'));
+        if (isChartWrap) {
+            const optBase64 = el.getAttribute('data-echarts-option');
+            if (optBase64) {
+                const escaped = (optBase64 || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return '<div class="yu-stream-editor-echarts-wrap" contenteditable="false" data-echarts-option="' + escaped + '"></div>';
+            }
+            return '';
+        }
+        const tag = el.nodeName.toLowerCase();
+        const voidTags = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+        let out = '<' + tag;
+        for (const a of el.attributes) {
+            const v = (a.value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            out += ' ' + a.name + '="' + v + '"';
+        }
+        out += '>';
+        if (voidTags.has(tag)) return out;
+        for (let i = 0; i < el.childNodes.length; i++) {
+            out += this._serializeEditorHtmlForMarkdown(el.childNodes[i]);
+        }
+        out += '</' + tag + '>';
+        return out;
+    }
+
     /** 设置编辑器内容为指定 HTML 并触发字数更新 */
     setHtml(html) {
         if (!this.editor) return;
@@ -790,9 +910,11 @@ export class YuStreamEditor {
     setMarkdown(md) {
         if (!this.editor || typeof md !== 'string') return;
         try {
+            // getMarkdown 会把所有 ` 转义为 \`，解析前统一反转义还原
+            const mdForParse = md.replace(/\\`/g, '`');
             marked.defaults.chartEnabled = this.chartEnabled;
             marked.defaults.chartRenderAsChart = true;
-            this.editor.innerHTML = marked.parse(md);
+            this.editor.innerHTML = marked.parse(mdForParse);
             this._mountEchartsInElement(this.editor);
         } catch (_) {
             this.editor.innerHTML = md;
@@ -940,17 +1062,6 @@ export class YuStreamEditor {
     /** 在只读与可编辑之间切换 */
     toggleReadonly() {
         this.setReadonly(!this._isReadonly);
-    }
-
-    /** 将当前 getHtml() 内容导出为 content.html 并触发浏览器下载 */
-    exportHtml() {
-        const html = this.getHtml();
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'content.html';
-        a.click();
-        URL.revokeObjectURL(a.href);
     }
 
     /** 将当前 getMarkdown() 内容导出为 content.md 并触发浏览器下载 */

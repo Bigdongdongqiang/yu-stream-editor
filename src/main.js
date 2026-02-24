@@ -3,7 +3,7 @@
  * - 创建 YuStreamEditor 并挂载到 #editor-container
  * - 模拟流式按钮：调用 runStreamDemo(editor, SAMPLE_MARKDOWN)
  * - 清空按钮：editor.clear()
- * - 将 appendStreamChunk、resetStream、getHtml、getMarkdown 挂到 window 便于控制台调试
+ * - 将 appendStreamChunk、resetStream、getMarkdown、getHtml 挂到 window 便于控制台调试
  */
 import { YuStreamEditor } from './Editor.js';
 import { SAMPLE_MARKDOWN } from './sampleMarkdown.js';
@@ -39,19 +39,50 @@ async function runStreamDemo(editor, source, options = {}) {
 }
 
 const editorContainer = document.getElementById('editor-container');
-const editor = new YuStreamEditor({ container: editorContainer });
+
+// YuStreamEditor 实例化时支持的全部选项（以下为完整列表，按需传入）
+const editorOptions = {
+    container: editorContainer,                    // HTMLElement，必填，挂载编辑器的容器（缺省回退到 #app）
+    tooltips: {},                                 // Object，覆盖默认 tooltip/placeholder，键见 Editor.js 的 DEFAULT_TOOLTIPS（如 editorPlaceholder、imageWidth、tableBorder 等）
+    tools: {
+        insert: ['image', 'link', 'table', 'hr'], // string[]，插入栏工具 id 及顺序
+        insertExtra: [],                           // Array<{ id, label, title?, onClick(ed) }>，插入栏扩展按钮
+        bubbleExtra: [],                            // Array<{ id, label, title?, onClick(ed) }>，气泡栏扩展按钮
+        tableExtra: [],                             // Array<{ id, label, title?, onClick(ed) }>，表格栏扩展按钮（选中表格时显示）
+        imageExtra: [],                             // Array<{ id, label, title?, onClick(ed) }>，图片栏扩展按钮（选中图片时显示）
+    },
+    dialog: undefined,                             // function(opts): Promise<Object|null>，自定义弹窗，替代内置 dialog
+    onPaste: undefined,                            // function(e, editor): boolean|void，粘贴钩子，返回 true 时由调用方处理
+    shortcuts: [],                                 // Array<{ key, ctrlKey?, metaKey?, handler(editor) }>，自定义快捷键
+    hooks: {},                                     // Object，钩子：onInit、onMount、beforeRender、afterRender、onFocus、onBlur、onChange
+    maxLength: 0,                                  // number，最大字数（0 表示不限制）
+    pastePlainText: false,                         // boolean，粘贴时是否转为纯文本
+    chartEnabled: true,                            // boolean，是否将 ```echarts 渲染为图表（false 时按代码块显示）
+    readonly: false,                               // boolean，是否只读（与 mode 二选一）
+    mode: 'edit',                                 // 'edit' | 'readonly'，模式，优先于 readonly
+};
+
+const editor = new YuStreamEditor(editorOptions);
 
 const streamDemoBtn = document.getElementById('streamDemo');
 const clearBtn = document.getElementById('clearEditor');
 const getMarkdownBtn = document.getElementById('getMarkdown');
 const getHtmlBtn = document.getElementById('getHtml');
 const applyMarkdownBtn = document.getElementById('applyMarkdown');
+const applyHtmlBtn = document.getElementById('applyHtml');
 const markdownInputEl = document.getElementById('markdown-input');
+const htmlInputEl = document.getElementById('html-input');
 
 function applyMarkdownToEditor() {
     if (!markdownInputEl) return;
     const md = markdownInputEl.value.trim();
     editor.setMarkdown(md || '');
+}
+
+function applyHtmlToEditor() {
+    if (!htmlInputEl) return;
+    const html = htmlInputEl.value.trim();
+    editor.setHtml(html || '');
 }
 
 if (streamDemoBtn) {
@@ -78,6 +109,22 @@ if (getMarkdownBtn) {
         }
     });
 }
+if (getHtmlBtn) {
+    getHtmlBtn.addEventListener('click', async () => {
+        const html = editor.getHtml();
+        if (htmlInputEl) htmlInputEl.value = html;
+        try {
+            await navigator.clipboard.writeText(html);
+            alert('已复制 HTML 到剪贴板（图表已转为 base64 图片）');
+        } catch {
+            console.log('HTML:\n', html);
+            alert('已输出到控制台（复制失败时）');
+        }
+    });
+}
+if (applyHtmlBtn) {
+    applyHtmlBtn.addEventListener('click', () => applyHtmlToEditor());
+}
 if (applyMarkdownBtn) {
     applyMarkdownBtn.addEventListener('click', () => applyMarkdownToEditor());
 }
@@ -88,23 +135,10 @@ if (markdownInputEl) {
         applyMarkdownTimer = setTimeout(() => applyMarkdownToEditor(), 600);
     });
 }
-if (getHtmlBtn) {
-    getHtmlBtn.addEventListener('click', async () => {
-        const html = editor.getHtml();
-        try {
-            await navigator.clipboard.writeText(html);
-            alert('已复制 HTML 到剪贴板');
-        } catch {
-            console.log('HTML:\n', html);
-            alert('已输出到控制台（复制失败时）');
-        }
-    });
-}
-
 window.appendStreamChunk = (chunk) => editor.appendStreamChunk(chunk);
 window.resetStream = () => editor.resetStream();
 window.getStreamBuffer = () => editor.getStreamBuffer();
-window.getHtml = () => editor.getHtml();
 window.getMarkdown = () => editor.getMarkdown();
+window.getHtml = () => editor.getHtml();
 
 export { editor, YuStreamEditor, runStreamDemo };

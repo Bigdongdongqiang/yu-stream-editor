@@ -911,6 +911,167 @@ select optgroup {
 	min-height: 200px;
 }
 
+/* 自定义锚点卡片：由 options.anchors 渲染的不可编辑块 */
+.yu-stream-editor-editor .yu-stream-editor-anchor-wrap {
+	margin: 1em 0;
+	max-width: 100%;
+}
+
+/* 流式过程中 echarts/锚点 的 loading 占位，结束后统一替换为图表或锚点卡片 */
+.yu-stream-editor-editor .yu-stream-editor-stream-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	min-height: 120px;
+	margin: 1em 0;
+	padding: 20px;
+	background: var(--code-bg);
+	border: 1px dashed var(--code-border);
+	border-radius: 10px;
+}
+.yu-stream-editor-stream-loading-text {
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+/* 流式过程中图片占位，结束后替换为真实 <img> */
+.yu-stream-editor-editor .yu-stream-editor-image-placeholder {
+	display: inline-block;
+	min-width: 120px;
+	min-height: 60px;
+	vertical-align: middle;
+	margin: 0 2px;
+	padding: 8px 12px;
+	background: var(--code-bg);
+	border: 1px dashed var(--code-border);
+	border-radius: 6px;
+	font-size: 13px;
+	color: var(--text-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* 自定义锚点示例：```notice 渲染的通知卡片 */
+.yu-demo-notice {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+	background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+	border: 1px solid #7dd3fc;
+	border-radius: 10px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+.yu-demo-notice-icon {
+	flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: #0ea5e9;
+	color: #fff;
+	border-radius: 50%;
+	font-size: 12px;
+	font-weight: 700;
+}
+.yu-demo-notice-body {
+	flex: 1;
+	min-width: 0;
+	color: #0c4a6e;
+}
+
+/* Vue 3 锚点卡片示例 */
+.yu-vue-card {
+	border: 1px solid #a78bfa;
+	border-radius: 10px;
+	overflow: hidden;
+	background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%);
+}
+.yu-vue-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	background: rgba(139, 92, 246, 0.15);
+	border-bottom: 1px solid #c4b5fd;
+}
+.yu-vue-card-badge {
+	font-size: 12px;
+	font-weight: 700;
+	color: #6d28d9;
+}
+.yu-vue-card-count {
+	font-size: 12px;
+	color: #7c3aed;
+}
+.yu-vue-card-body {
+	padding: 12px 14px;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #5b21b6;
+}
+.yu-vue-card-btn {
+	margin: 0 12px 12px;
+	padding: 6px 14px;
+	font-size: 12px;
+	background: #7c3aed;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+}
+.yu-vue-card-btn:hover {
+	background: #6d28d9;
+}
+
+/* React 锚点卡片示例 */
+.yu-react-card {
+	border: 1px solid #34d399;
+	border-radius: 10px;
+	overflow: hidden;
+	background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+}
+.yu-react-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	background: rgba(16, 185, 129, 0.2);
+	border-bottom: 1px solid #6ee7b7;
+}
+.yu-react-card-badge {
+	font-size: 12px;
+	font-weight: 700;
+	color: #047857;
+}
+.yu-react-card-count {
+	font-size: 12px;
+	color: #059669;
+}
+.yu-react-card-body {
+	padding: 12px 14px;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #065f46;
+}
+.yu-react-card-btn {
+	margin: 0 12px 12px;
+	padding: 6px 14px;
+	font-size: 12px;
+	background: #10b981;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+}
+.yu-react-card-btn:hover {
+	background: #059669;
+}
+
 /* 流式过程中 \`\`\`echarts 先以代码块显示，结束后再替换为图表 */
 .yu-stream-editor-editor .yu-stream-editor-echarts-pending {
 	margin: 1em 0;

@@ -3,10 +3,12 @@
  * - 创建 YuStreamEditor 并挂载到 #editor-container
  * - 模拟流式按钮：调用 runStreamDemo(editor, SAMPLE_MARKDOWN)
  * - 清空按钮：editor.clear()
- * - 将 appendStreamChunk、resetStream、getMarkdown、getHtml 挂到 window 便于控制台调试
+ * - 将 appendStreamChunk、resetStream、getMarkdown 挂到 window 便于控制台调试
  */
 import { YuStreamEditor } from './Editor.js';
 import { SAMPLE_MARKDOWN } from './sampleMarkdown.js';
+import vueCardAnchor from './anchors/vue-card.js';
+import reactCardAnchor from './anchors/react-card.jsx';
 
 /**
  * 流式渲染：支持字符串模拟或异步迭代器。执行过程中编辑器只读，结束后恢复。
@@ -57,7 +59,25 @@ const editorOptions = {
     hooks: {},                                     // Object，钩子：onInit、onMount、beforeRender、afterRender、onFocus、onBlur、onChange
     maxLength: 0,                                  // number，最大字数（0 表示不限制）
     pastePlainText: false,                         // boolean，粘贴时是否转为纯文本
-    chartEnabled: true,                            // boolean，是否将 ```echarts 渲染为图表（false 时按代码块显示）
+    chartEnabled: false,                            // boolean，是否将 ```echarts 渲染为图表（false 时按代码块显示）
+    anchors: [
+        // 示例：```notice 围栏渲染为「通知卡片」组件
+        {
+            id: 'notice',
+            language: 'notice',
+            render(source) {
+                const text = (source || '').trim()
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+                    .replace(/\n/g, '<br>');
+                return '<div class="yu-demo-notice">' +
+                    '<span class="yu-demo-notice-icon" aria-hidden="true">ℹ</span>' +
+                    '<div class="yu-demo-notice-body">' + text + '</div>' +
+                    '</div>';
+            },
+        },
+        vueCardAnchor,   // ```vue-card → Vue 3 组件卡片（带点击计数）
+        reactCardAnchor, // ```react-card → React 组件卡片（带点击计数）
+    ],
     readonly: false,                               // boolean，是否只读（与 mode 二选一）
     mode: 'edit',                                 // 'edit' | 'readonly'，模式，优先于 readonly
 };
@@ -67,22 +87,13 @@ const editor = new YuStreamEditor(editorOptions);
 const streamDemoBtn = document.getElementById('streamDemo');
 const clearBtn = document.getElementById('clearEditor');
 const getMarkdownBtn = document.getElementById('getMarkdown');
-const getHtmlBtn = document.getElementById('getHtml');
 const applyMarkdownBtn = document.getElementById('applyMarkdown');
-const applyHtmlBtn = document.getElementById('applyHtml');
 const markdownInputEl = document.getElementById('markdown-input');
-const htmlInputEl = document.getElementById('html-input');
 
 function applyMarkdownToEditor() {
     if (!markdownInputEl) return;
     const md = markdownInputEl.value.trim();
     editor.setMarkdown(md || '');
-}
-
-function applyHtmlToEditor() {
-    if (!htmlInputEl) return;
-    const html = htmlInputEl.value.trim();
-    editor.setHtml(html || '');
 }
 
 if (streamDemoBtn) {
@@ -109,22 +120,6 @@ if (getMarkdownBtn) {
         }
     });
 }
-if (getHtmlBtn) {
-    getHtmlBtn.addEventListener('click', async () => {
-        const html = editor.getHtml();
-        if (htmlInputEl) htmlInputEl.value = html;
-        try {
-            await navigator.clipboard.writeText(html);
-            alert('已复制 HTML 到剪贴板（图表已转为 base64 图片）');
-        } catch {
-            console.log('HTML:\n', html);
-            alert('已输出到控制台（复制失败时）');
-        }
-    });
-}
-if (applyHtmlBtn) {
-    applyHtmlBtn.addEventListener('click', () => applyHtmlToEditor());
-}
 if (applyMarkdownBtn) {
     applyMarkdownBtn.addEventListener('click', () => applyMarkdownToEditor());
 }
@@ -139,6 +134,5 @@ window.appendStreamChunk = (chunk) => editor.appendStreamChunk(chunk);
 window.resetStream = () => editor.resetStream();
 window.getStreamBuffer = () => editor.getStreamBuffer();
 window.getMarkdown = () => editor.getMarkdown();
-window.getHtml = () => editor.getHtml();
 
 export { editor, YuStreamEditor, runStreamDemo };

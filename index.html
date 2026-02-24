@@ -14,7 +14,6 @@
             <button type="button" id="streamDemo" title="模拟流式输入">模拟流式</button>
             <button type="button" id="clearEditor" title="清空">清空</button>
             <button type="button" id="getMarkdown" title="获取当前内容为 Markdown">获取Markdown</button>
-            <button type="button" id="getHtml" title="获取当前内容为 HTML（图表为 base64 图片）">获取HTML</button>
         </div>
         <div id="editor-container"></div>
         <div class="yu-markdown-preview-wrap">
@@ -24,14 +23,6 @@
             </div>
             <textarea id="markdown-input" class="yu-markdown-preview-box"
                 placeholder="在此输入或粘贴 Markdown，点击「应用到编辑器」后在上方编辑区显示"></textarea>
-        </div>
-        <div class="yu-markdown-preview-wrap">
-            <div class="yu-markdown-preview-header">
-                <span class="yu-markdown-preview-title">HTML 输入</span>
-                <button type="button" id="applyHtml" title="将下方 HTML 设为上方编辑区内容">应用到编辑器</button>
-            </div>
-            <textarea id="html-input" class="yu-markdown-preview-box"
-                placeholder="在此输入或粘贴 HTML，点击「应用到编辑器」后在上方编辑区显示"></textarea>
         </div>
     </div>
     <script type="module" src="/src/main.js"></script>

@@ -6,7 +6,7 @@
 
 ## 功能概览
 
-- **流式 Markdown**：内容以字符串或异步迭代器（如 fetch 流、SSE）逐段传入，实时解析并渲染到编辑区。
+- **流式 Markdown**：内容以字符串或异步迭代器（如 fetch 流、SSE）逐段传入，实时解析并渲染到编辑区。流式过程中 **ECharts 图表、自定义锚点、图片** 均以统一「加载中…」占位显示，避免每次 innerHTML 更新重复请求或重挂组件；在 `setReadonly(false)`（流式结束）时再统一替换为真实图表、锚点卡片与图片。
 - **选中文字工具栏**：选中后可修改字体、字号、颜色，以及粗体 / 斜体 / 下划线、标题、有序·无序列表。
 - **光标插入工具栏**：无选区时显示「图片、链接、表格、分割线」等插入入口。
 - **表格**：插入表格后支持边框样式（完整 / 仅外框 / 无）、对齐方式、边框颜色，以及增删行列；选中表格时有边框高亮。
@@ -51,6 +51,7 @@ const editor = new YuStreamEditor({ container });
 | `maxLength` | `number` | 最大字数（纯文本，0 表示不限制） |
 | `pastePlainText` | `boolean` | 粘贴时是否转为纯文本（默认 `false`） |
 | `chartEnabled` | `boolean` | 是否将 \`\`\`echarts 渲染为图表（默认 `true`）。设为 `false` 时按普通代码块显示，不渲染 ECharts。可运行时修改 `editor.chartEnabled`。 |
+| `anchors` | `Array` | 自定义锚点，见下方「自定义锚点」：将指定 \`\`\`language 围栏替换为不可编辑卡片，getMarkdown 时还原。 |
 | `readonly` | `boolean` | 是否只读（默认 `false`），与 `mode` 二选一即可 |
 | `mode` | `'edit' \| 'readonly'` | 模式：`'edit'` 编辑模式，`'readonly'` 只读模式；优先于 `readonly` |
 | `tools` | `Object` | 工具栏可配置与扩展，见下方「工具栏 tools」 |
@@ -62,6 +63,53 @@ const editor = new YuStreamEditor({ container });
 
 内置插入栏 id：`image`、`link`、`table`、`hr`（可从 `Editor.js` 导入 `DEFAULT_INSERT_TOOLS` 查看）。
 
+### 自定义锚点（anchors）
+
+通过 `options.anchors` 可配置「锚点」：当 Markdown 中出现 \`\`\`language 围栏且 `language` 与某项的 `language` 匹配时，用该项的 `render(代码块源码)` 返回的 HTML 替换为**不可编辑**的卡片；`getMarkdown()` 时会还原为 \`\`\`language\n...\n\`\`\`，保证往返一致。
+
+每项配置：`{ id: string, language: string, render: (source: string) => string | { html: string }, mount?: (element: HTMLElement, source: string) => void }`。`render` 返回 HTML 字符串或 `{ html }`，用于初次渲染卡片占位；可选 `mount(卡片根元素, 源码)` 在节点插入 DOM 后调用，可在该容器内挂载 **Vue / React** 等组件，实现交互式卡片。
+
+**Vue/React 组件卡片示例**：`render` 返回一个空占位 div，在 `mount(el, source)` 里对 `el` 挂载组件即可。
+
+```js
+// Vue 3 示例（需在页面引入 Vue）
+anchors: [{
+  id: 'vue-card',
+  language: 'vue-card',
+  render() { return '<div class="vue-card-mount"></div>'; },
+  mount(el, source) {
+    el.innerHTML = '';
+    const app = Vue.createApp({ template: '<div class="my-vue-card">' + source + '</div>' });
+    app.mount(el);
+  },
+}]
+
+// React 18 示例（需在页面引入 React、ReactDOM）
+anchors: [{
+  id: 'react-card',
+  language: 'react-card',
+  render() { return '<div class="react-card-mount"></div>'; },
+  mount(el, source) {
+    el.innerHTML = '';
+    const root = ReactDOM.createRoot(el);
+    root.render(React.createElement('div', { className: 'my-react-card' }, source));
+  },
+}]
+```
+
+示例（自定义 mermaid 类锚点，仅 HTML）：
+
+```js
+const editor = new YuStreamEditor({
+  container: document.getElementById('editor-container'),
+  anchors: [
+    { id: 'mermaid', language: 'mermaid', render(source) { return '<div class="my-mermaid-card">' + source + '</div>'; } },
+  ],
+});
+```
+
+内置的 \`\`\`echarts 图表块逻辑独立于 anchors；若希望 echarts 也走锚点流程，可设 `chartEnabled: false` 并添加 `{ id: 'echarts', language: 'echarts', render: ... }` 自行渲染。
+
 示例：
 
 ```js
@@ -72,7 +120,7 @@ const editor = new YuStreamEditor({
   tools: {
     insert: ['link', 'table', 'image'],  // 调整顺序并隐藏分割线
     insertExtra: [
-      { id: 'custom', label: '自定义', title: '自定义操作', onClick(ed) { /* 使用 ed.getMarkdown()、ed.setHtml()、ed.exec() 等 */ } },
+      { id: 'custom', label: '自定义', title: '自定义操作', onClick(ed) { /* 使用 ed.getMarkdown()、ed.setMarkdown()、ed.exec() 等 */ } },
     ],
     bubbleExtra: [
       { id: 'strike', label: '删除线', onClick(ed) { ed.exec('strikeThrough'); } },
@@ -152,8 +200,6 @@ const editor = new YuStreamEditor({
 
 | 方法 | 说明 |
 |------|------|
-| `setHtml(html)` | 设置编辑器 HTML |
-| `getHtml()` | 获取当前内容为 HTML 字符串；**导出为 HTML 时，ECharts 图表会转为 base64 图片嵌入** |
 | `getMarkdown()` | 将当前内容转为 Markdown 字符串；**导出为 Markdown 时，图表以 \`\`\`echarts 代码块形式保留，可正常渲染** |
 | `setMarkdown(md)` | 将 Markdown 解析为 HTML 并写入编辑器 |
 | `appendStreamChunk(chunk)` | 追加一段 Markdown 到流式缓冲并重新解析渲染（用于流式接口逐段返回） |
@@ -222,7 +268,7 @@ editor.notifyChange();
 
 ## ECharts 图表与生成提示词
 
-编辑器支持在 Markdown 中使用 **\`\`\`echarts** 代码块，内容为 [ECharts option](https://echarts.apache.org/zh/option.html) 的 **JSON**，会渲染为图表。流式生成过程中先以代码块展示，结束后再替换为图表。
+编辑器支持在 Markdown 中使用 **\`\`\`echarts** 代码块，内容为 [ECharts option](https://echarts.apache.org/zh/option.html) 的 **JSON**，会渲染为图表。流式过程中与自定义锚点、图片一样，以统一「加载中…」占位展示，在 `setReadonly(false)` 时再替换为图表并挂载。
 
 ### 格式要求
 
@@ -266,8 +312,17 @@ editor.notifyChange();
 
 ### 导出说明
 
-- **导出为 HTML**（`getHtml()`）：ECharts 图表会转为 **base64 图片** 嵌入，便于在无 ECharts 环境中展示或存档。
-- **导出为 Markdown**（`getMarkdown()`）：图表以 **\`\`\`echarts 代码块** 形式保留，可再次导入后正常渲染为图表。
+- **导出为 Markdown**（`getMarkdown()`）：图表以 **\`\`\`echarts 代码块** 形式保留，自定义锚点以 **\`\`\`language** 围栏保留，图片以 **\![alt](url)** 语法保留；流式未结束时的占位节点也会被正确导出为对应 Markdown 语法。编辑器**仅支持 Markdown 的获取与设置**（`getMarkdown()` / `setMarkdown(md)`），不再提供 HTML 导出接口。
+
+---
+
+## 更新日志
+
+### 近期修改（流式占位与内容 API 收敛）
+
+- **流式占位统一**：流式输入时，\`\`\`echarts 图表、自定义锚点（\`\`\`language）、以及 Markdown 图片 \`![alt](url)\` 不再边流式边渲染，而是先输出统一「加载中…」占位；在调用 `setReadonly(false)`（流式结束）时再一次性替换为真实 ECharts 图表、锚点卡片与 \<img\>，避免每次 innerHTML 更新导致图表重挂、锚点重挂、图片重复加载。
+- **移除 HTML 接口**：删除 `getHtml()`、`setHtml(html)` 及与之相关的图表转 base64 图片等逻辑；内容进出仅通过 `getMarkdown()` / `setMarkdown(md)`，保证以 Markdown 为单一数据源。
+- **图片占位**：流式过程中的图片以占位节点（\`.yu-stream-editor-image-placeholder\`）展示，`getMarkdown()` 会将其正确导出为 \`![alt](url)\`。
 
 ---
 

@@ -1,12 +1,13 @@
 # Yu流式编辑器
 
-基于 contenteditable 的流式富文本编辑器：支持流式 Markdown 输入并实时转 HTML 渲染，同时提供字体/字号/颜色、表格样式、图片与链接等富文本能力。样式类均以 `yu-stream-editor` 为前缀，便于嵌入与主题隔离。
+基于 contenteditable 的流式富文本编辑器：支持流式 Markdown 输入并实时转 HTML 渲染，**支持 ECharts 图表与自定义卡片（Vue/React 等）渲染**，同时提供字体/字号/颜色、表格样式、图片与链接等富文本能力。样式类均以 `yu-stream-editor` 为前缀，便于嵌入与主题隔离。
 
 ---
 
 ## 功能概览
 
-- **流式 Markdown**：内容以字符串或异步迭代器（如 fetch 流、SSE）逐段传入，实时解析并渲染到编辑区。流式过程中 **ECharts 图表、自定义锚点、图片** 均以统一「加载中…」占位显示，避免每次 innerHTML 更新重复请求或重挂组件；在 `setReadonly(false)`（流式结束）时再统一替换为真实图表、锚点卡片与图片。
+- **流式 Markdown**：内容以字符串或异步迭代器（如 fetch 流、SSE）逐段传入，实时解析并渲染到编辑区。流式过程中 **ECharts 图表、自定义卡片（锚点）、图片** 均以统一「加载中…」占位显示，避免每次 innerHTML 更新重复请求或重挂组件；在 `setReadonly(false)`（流式结束）时再统一替换为真实图表、卡片与图片。
+- **卡片渲染**：通过 \`\`\`language 代码块 + `anchors` 配置，将指定语言块渲染为**不可编辑的卡片**；支持在 `mount` 中挂载 **Vue 3 / React** 等组件，实现交互式卡片（见「自定义锚点（卡片）」）。内置 \`\`\`echarts 独立渲染为图表；也可将 echarts 纳入锚点自行渲染。
 - **选中文字工具栏**：选中后可修改字体、字号、颜色，以及粗体 / 斜体 / 下划线、标题、有序·无序列表。
 - **光标插入工具栏**：无选区时显示「图片、链接、表格、分割线」等插入入口。
 - **表格**：插入表格后支持边框样式（完整 / 仅外框 / 无）、对齐方式、边框颜色，以及增删行列；选中表格时有边框高亮。
@@ -51,7 +52,7 @@ const editor = new YuStreamEditor({ container });
 | `maxLength` | `number` | 最大字数（纯文本，0 表示不限制） |
 | `pastePlainText` | `boolean` | 粘贴时是否转为纯文本（默认 `false`） |
 | `chartEnabled` | `boolean` | 是否将 \`\`\`echarts 渲染为图表（默认 `true`）。设为 `false` 时按普通代码块显示，不渲染 ECharts。可运行时修改 `editor.chartEnabled`。 |
-| `anchors` | `Array` | 自定义锚点，见下方「自定义锚点」：将指定 \`\`\`language 围栏替换为不可编辑卡片，getMarkdown 时还原。 |
+| `anchors` | `Array` | 自定义锚点（卡片），见下方「自定义锚点（卡片）」：将指定 \`\`\`language 围栏替换为不可编辑卡片，getMarkdown 时还原。 |
 | `readonly` | `boolean` | 是否只读（默认 `false`），与 `mode` 二选一即可 |
 | `mode` | `'edit' \| 'readonly'` | 模式：`'edit'` 编辑模式，`'readonly'` 只读模式；优先于 `readonly` |
 | `tools` | `Object` | 工具栏可配置与扩展，见下方「工具栏 tools」 |
@@ -63,16 +64,16 @@ const editor = new YuStreamEditor({ container });
 
 内置插入栏 id：`image`、`link`、`table`、`hr`（可从 `Editor.js` 导入 `DEFAULT_INSERT_TOOLS` 查看）。
 
-### 自定义锚点（anchors）
+### 自定义锚点（卡片渲染）
 
-通过 `options.anchors` 可配置「锚点」：当 Markdown 中出现 \`\`\`language 围栏且 `language` 与某项的 `language` 匹配时，用该项的 `render(代码块源码)` 返回的 HTML 替换为**不可编辑**的卡片；`getMarkdown()` 时会还原为 \`\`\`language\n...\n\`\`\`，保证往返一致。
+通过 `options.anchors` 可配置「锚点」即**卡片渲染**：当 Markdown 中出现 \`\`\`language 围栏且 `language` 与某项的 `language` 匹配时，用该项的 `render(代码块源码)` 返回的 HTML 替换为**不可编辑**的卡片；`getMarkdown()` 时会还原为 \`\`\`language\n...\n\`\`\`，保证往返一致。
 
 每项配置：`{ id: string, language: string, render: (source: string) => string | { html: string }, mount?: (element: HTMLElement, source: string) => void }`。`render` 返回 HTML 字符串或 `{ html }`，用于初次渲染卡片占位；可选 `mount(卡片根元素, 源码)` 在节点插入 DOM 后调用，可在该容器内挂载 **Vue / React** 等组件，实现交互式卡片。
 
-**Vue/React 组件卡片示例**：`render` 返回一个空占位 div，在 `mount(el, source)` 里对 `el` 挂载组件即可。
+**Vue / React 卡片示例**：`render` 返回一个空占位 div，在 `mount(el, source)` 里对 `el` 挂载组件即可。项目内提供 `src/anchors/vue-card.js`、`src/anchors/react-card.jsx` 示例，可直接作为 `anchors` 项引入。
 
 ```js
-// Vue 3 示例（需在页面引入 Vue）
+// Vue 3 卡片示例（需在页面引入 Vue；也可直接使用 src/anchors/vue-card.js）
 anchors: [{
   id: 'vue-card',
   language: 'vue-card',
@@ -84,7 +85,7 @@ anchors: [{
   },
 }]
 
-// React 18 示例（需在页面引入 React、ReactDOM）
+// React 18 卡片示例（需在页面引入 React、ReactDOM；也可直接使用 src/anchors/react-card.jsx）
 anchors: [{
   id: 'react-card',
   language: 'react-card',
@@ -97,7 +98,7 @@ anchors: [{
 }]
 ```
 
-示例（自定义 mermaid 类锚点，仅 HTML）：
+示例（仅 HTML 的卡片，如自定义 mermaid）：
 
 ```js
 const editor = new YuStreamEditor({
@@ -108,7 +109,7 @@ const editor = new YuStreamEditor({
 });
 ```
 
-内置的 \`\`\`echarts 图表块逻辑独立于 anchors；若希望 echarts 也走锚点流程，可设 `chartEnabled: false` 并添加 `{ id: 'echarts', language: 'echarts', render: ... }` 自行渲染。
+内置的 \`\`\`echarts 图表块逻辑独立于 anchors；若希望 echarts 也走锚点（卡片）流程，可设 `chartEnabled: false` 并添加 `{ id: 'echarts', language: 'echarts', render: ... }` 自行渲染。
 
 示例：
 
@@ -200,7 +201,7 @@ const editor = new YuStreamEditor({
 
 | 方法 | 说明 |
 |------|------|
-| `getMarkdown()` | 将当前内容转为 Markdown 字符串；**导出为 Markdown 时，图表以 \`\`\`echarts 代码块形式保留，可正常渲染** |
+| `getMarkdown()` | 将当前内容转为 Markdown 字符串；**导出为 Markdown 时，图表以 \`\`\`echarts 代码块形式保留，自定义卡片以 \`\`\`language 围栏保留，可正常渲染** |
 | `setMarkdown(md)` | 将 Markdown 解析为 HTML 并写入编辑器 |
 | `appendStreamChunk(chunk)` | 追加一段 Markdown 到流式缓冲并重新解析渲染（用于流式接口逐段返回） |
 | `notifyChange()` | 通知内容已变更（触发 onChange 钩子），流式结束或程序化改内容后可由外部调用 |
@@ -312,7 +313,7 @@ editor.notifyChange();
 
 ### 导出说明
 
-- **导出为 Markdown**（`getMarkdown()`）：图表以 **\`\`\`echarts 代码块** 形式保留，自定义锚点以 **\`\`\`language** 围栏保留，图片以 **\![alt](url)** 语法保留；流式未结束时的占位节点也会被正确导出为对应 Markdown 语法。编辑器**仅支持 Markdown 的获取与设置**（`getMarkdown()` / `setMarkdown(md)`），不再提供 HTML 导出接口。
+- **导出为 Markdown**（`getMarkdown()`）：图表以 **\`\`\`echarts 代码块** 形式保留，**自定义卡片（锚点）** 以 **\`\`\`language** 围栏保留，图片以 **\![alt](url)** 语法保留；流式未结束时的占位节点也会被正确导出为对应 Markdown 语法。编辑器**仅支持 Markdown 的获取与设置**（`getMarkdown()` / `setMarkdown(md)`），不再提供 HTML 导出接口。
 
 ---
 
@@ -320,7 +321,7 @@ editor.notifyChange();
 
 ### 近期修改（流式占位与内容 API 收敛）
 
-- **流式占位统一**：流式输入时，\`\`\`echarts 图表、自定义锚点（\`\`\`language）、以及 Markdown 图片 \`![alt](url)\` 不再边流式边渲染，而是先输出统一「加载中…」占位；在调用 `setReadonly(false)`（流式结束）时再一次性替换为真实 ECharts 图表、锚点卡片与 \<img\>，避免每次 innerHTML 更新导致图表重挂、锚点重挂、图片重复加载。
+- **流式占位统一**：流式输入时，\`\`\`echarts 图表、**自定义卡片（锚点）**（\`\`\`language）、以及 Markdown 图片 \`![alt](url)\` 不再边流式边渲染，而是先输出统一「加载中…」占位；在调用 `setReadonly(false)`（流式结束）时再一次性替换为真实 ECharts 图表、卡片与 \<img\>，避免每次 innerHTML 更新导致图表重挂、卡片重挂、图片重复加载。
 - **移除 HTML 接口**：删除 `getHtml()`、`setHtml(html)` 及与之相关的图表转 base64 图片等逻辑；内容进出仅通过 `getMarkdown()` / `setMarkdown(md)`，保证以 Markdown 为单一数据源。
 - **图片占位**：流式过程中的图片以占位节点（\`.yu-stream-editor-image-placeholder\`）展示，`getMarkdown()` 会将其正确导出为 \`![alt](url)\`。
 
@@ -344,6 +345,7 @@ editor.notifyChange();
 ## 开发说明
 
 - 示例 Markdown 在 `src/sampleMarkdown.js`，可按需替换或从接口获取。
+- 卡片渲染示例：`src/anchors/vue-card.js`（Vue 3）、`src/anchors/react-card.jsx`（React 18），可在 `main.js` 中作为 `anchors` 传入编辑器。
 - 本仓库将「模拟流式」按钮的文案简化为「模拟流式」；流式 API（`appendStreamChunk`、`resetStream`、`getStreamBuffer`）与 `getMarkdown` 在示例中挂到 `window` 上，便于控制台调试或外部脚本调用。
 
 

@@ -143,11 +143,75 @@ function el(tag, attrs = {}, children = []) {
     return node;
 }
 
-/** 创建 <select>，options 为 { value, label }[]，用于字体/字号/边框/对齐等下拉框 */
-function select(options, attrs = {}) {
-    const s = el('select', attrs);
-    options.forEach(({ value, label }) => s.appendChild(el('option', { value }, [label])));
-    return s;
+/**
+ * 自定义 Select 组件：与原生 select 兼容的 API（.value、addEventListener('change')），可完全自定义样式。
+ * @param {Array<{ value: string, label: string }>} options
+ * @param {{ className?: string, title?: string, value?: string }} attrs
+ * @returns {HTMLElement} 根节点，可 append；带 .value get/set 与 addEventListener('change')
+ */
+function customSelect(options, attrs = {}) {
+    if (!options.length) return el('div');
+    const baseClass = 'yu-stream-editor-select';
+    const root = el('div', { className: [baseClass, (attrs.className || '')].filter(Boolean).join(' '), title: attrs.title || '' });
+    const trigger = el('button', { type: 'button', className: baseClass + '-trigger' }, [
+        el('span', { className: baseClass + '-label' }, [options[0].label]),
+        el('span', { className: baseClass + '-arrow' }, ['▼']),
+    ]);
+    const list = el('div', { className: baseClass + '-list' });
+    options.forEach((opt) => {
+        const item = el('div', { className: baseClass + '-item', 'data-value': opt.value }, [opt.label]);
+        list.appendChild(item);
+    });
+    root.appendChild(trigger);
+    root.appendChild(list);
+
+    let currentValue = attrs.value != null ? String(attrs.value) : (options[0]?.value ?? '');
+    const getLabel = (v) => options.find((o) => String(o.value) === String(v))?.label ?? '';
+    const updateTrigger = () => {
+        const span = trigger.querySelector('.' + baseClass + '-label');
+        if (span) span.textContent = getLabel(currentValue) || '';
+    };
+    const updateActive = () => {
+        list.querySelectorAll('.' + baseClass + '-item').forEach((node) => {
+            node.classList.toggle('is-active', String(node.getAttribute('data-value')) === String(currentValue));
+        });
+    };
+
+    const close = () => {
+        root.classList.remove('is-open');
+        document.removeEventListener('click', close);
+    };
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (root.classList.toggle('is-open')) {
+            requestAnimationFrame(() => document.addEventListener('click', close));
+        } else {
+            document.removeEventListener('click', close);
+        }
+    });
+    list.addEventListener('click', (e) => {
+        const item = e.target.closest('.' + baseClass + '-item');
+        if (!item) return;
+        const v = item.getAttribute('data-value');
+        currentValue = v ?? currentValue;
+        updateTrigger();
+        updateActive();
+        close();
+        root.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    Object.defineProperty(root, 'value', {
+        get() { return currentValue; },
+        set(v) {
+            currentValue = v != null ? String(v) : '';
+            updateTrigger();
+            updateActive();
+        },
+        configurable: true,
+    });
+    updateTrigger();
+    updateActive();
+    return root;
 }
 
 /** 默认 tooltip/placeholder 文案，可通过 new YuStreamEditor({ tooltips: { ... } }) 覆盖 */
@@ -440,8 +504,8 @@ export class YuStreamEditor {
      */
     _createTableToolbar() {
         const t = this.tooltips;
-        const tableToolbarBorder = select(BORDER_OPTIONS, { title: t.tableBorder });
-        const tableToolbarAlign = select(ALIGN_OPTIONS, { title: t.tableAlign });
+        const tableToolbarBorder = customSelect(BORDER_OPTIONS, { title: t.tableBorder });
+        const tableToolbarAlign = customSelect(ALIGN_OPTIONS, { title: t.tableAlign });
         const tableToolbarBorderColor = el('input', { type: 'color', value: '#cccccc', title: t.tableBorderColor });
         const tableToolbarAlignLeftBtn = el('button', { type: 'button', title: t.tableAlignLeft }, ['居左']);
         const tableToolbarAlignCenterBtn = el('button', { type: 'button', title: t.tableAlignCenter }, ['居中']);
@@ -495,8 +559,8 @@ export class YuStreamEditor {
      */
     _createBubbleToolbar() {
         const t = this.tooltips;
-        const bubbleFontName = select(FONT_OPTIONS, { className: 'yu-stream-editor-bubble-font-name', title: t.bubbleFontName });
-        const bubbleFontSize = select(FONT_SIZE_OPTIONS, { className: 'yu-stream-editor-bubble-font-size', title: t.bubbleFontSize });
+        const bubbleFontName = customSelect(FONT_OPTIONS, { className: 'yu-stream-editor-bubble-font-name', title: t.bubbleFontName });
+        const bubbleFontSize = customSelect(FONT_SIZE_OPTIONS, { className: 'yu-stream-editor-bubble-font-size', title: t.bubbleFontSize });
         const bubbleFontColor = el('input', { type: 'color', className: 'yu-stream-editor-bubble-font-color', value: '#000000', title: t.bubbleFontColor });
         const bubbleBoldBtn = el('button', { type: 'button', className: 'yu-stream-editor-bubble-bold', title: t.bubbleBold }, ['B']);
         const bubbleItalicBtn = el('button', { type: 'button', className: 'yu-stream-editor-bubble-italic', title: t.bubbleItalic }, ['I']);

@@ -12,8 +12,11 @@
 	"dependencies": {
 		"echarts": "^6.0.0",
 		"marked": "^12.0.0",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1",
 		"turndown": "^7.2.0",
-		"turndown-plugin-gfm": "^1.0.2"
+		"turndown-plugin-gfm": "^1.0.2",
+		"vue": "^3.5.29"
 	},
 	"devDependencies": {
 		"vite": "^5.4.0"

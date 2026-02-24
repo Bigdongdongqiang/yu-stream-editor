@@ -47,10 +47,7 @@ marked.use({
                     }
                     return `<div class="yu-stream-editor-echarts-wrap" contenteditable="false" data-echarts-option="${optionBase64}"><div class="yu-stream-editor-echarts-container" style="width:100%;height:300px"></div></div>`;
                 } catch (_) {
-                    if (isStreaming) {
-                        const sourceBase64 = btoa(unescape(encodeURIComponent(code.trim())));
-                        return `<div class="yu-stream-editor-stream-loading" contenteditable="false" data-type="echarts" data-echarts-option="${sourceBase64.replace(/"/g, '&quot;')}">${STREAM_LOADING_INNER}</div>`;
-                    }
+
                     return `<pre class="yu-stream-editor-echarts-pending" contenteditable="false"><code>${code}</code></pre>`;
                 }
             }

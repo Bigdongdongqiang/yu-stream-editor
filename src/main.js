@@ -59,7 +59,7 @@ const editorOptions = {
     hooks: {},                                     // Object，钩子：onInit、onMount、beforeRender、afterRender、onFocus、onBlur、onChange
     maxLength: 0,                                  // number，最大字数（0 表示不限制）
     pastePlainText: false,                         // boolean，粘贴时是否转为纯文本
-    chartEnabled: false,                            // boolean，是否将 ```echarts 渲染为图表（false 时按代码块显示）
+    chartEnabled: true,                            // boolean，是否将 ```echarts 渲染为图表（false 时按代码块显示）
     anchors: [
         // 示例：```notice 围栏渲染为「通知卡片」组件
         {

@@ -29,7 +29,7 @@ marked.use({
                         const escapedCode = pretty.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                         return `<pre class="yu-stream-editor-echarts-pending" contenteditable="false" data-echarts-option="${optionBase64}"><code>${escapedCode}</code></pre>`;
                     }
-                    return `<div class="yu-stream-editor-echarts-wrap" contenteditable="false" data-echarts-option="${optionBase64}"><span class="yu-stream-editor-echarts-data" style="display:none !important" data-echarts-option="${optionBase64}" aria-hidden="true"></span><div class="yu-stream-editor-echarts-container" style="width:100%;height:300px"></div></div>`;
+                    return `<div class="yu-stream-editor-echarts-wrap" contenteditable="false" data-echarts-option="${optionBase64}"><div class="yu-stream-editor-echarts-container" style="width:100%;height:300px"></div></div>`;
                 } catch (_) { /* 非合法 JSON 时按普通代码块显示 */ }
             }
             return false;
@@ -635,7 +635,7 @@ export class YuStreamEditor {
         const mountOne = (index) => {
             if (index >= wraps.length) return;
             const wrap = wraps[index];
-            const optBase64 = wrap.getAttribute('data-echarts-option') || wrap.querySelector('.yu-stream-editor-echarts-data')?.getAttribute('data-echarts-option');
+            const optBase64 = wrap.getAttribute('data-echarts-option');
             if (!optBase64) { scheduleNext(index + 1); return; }
             let option;
             try {
@@ -757,7 +757,7 @@ export class YuStreamEditor {
         const el = node;
         const hasContainerAsDirectChild = Array.from(el.children).some((c) => c.classList?.contains('yu-stream-editor-echarts-container'));
         const isChartWrap = el.classList?.contains('yu-stream-editor-echarts-wrap') ||
-            (hasContainerAsDirectChild && (el.getAttribute('data-echarts-option') || el.querySelector('.yu-stream-editor-echarts-data')));
+            (hasContainerAsDirectChild && el.getAttribute('data-echarts-option'));
         if (isChartWrap) {
             const dataUrl = this._getChartDataUrl(el);
             if (dataUrl) return '<img src="' + dataUrl.replace(/"/g, '&quot;') + '" alt="图表" class="yu-stream-editor-echarts-export-img">';
@@ -911,15 +911,9 @@ export class YuStreamEditor {
             wrap.className = 'yu-stream-editor-echarts-wrap';
             wrap.setAttribute('contenteditable', 'false');
             wrap.setAttribute('data-echarts-option', optBase64);
-            const span = document.createElement('span');
-            span.className = 'yu-stream-editor-echarts-data';
-            span.style.cssText = 'display:none !important';
-            span.setAttribute('aria-hidden', 'true');
-            span.setAttribute('data-echarts-option', optBase64);
             const container = document.createElement('div');
             container.className = 'yu-stream-editor-echarts-container';
             container.style.cssText = 'width:100%;height:300px';
-            wrap.appendChild(span);
             wrap.appendChild(container);
             pre.parentNode.replaceChild(wrap, pre);
         });

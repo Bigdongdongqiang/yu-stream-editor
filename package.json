@@ -4,6 +4,7 @@
 	"version": "0.1.0",
 	"type": "module",
 	"publisher": "bigdongdongqiang",
+	"description": "基于 contenteditable 的流式富文本编辑器：支持流式 Markdown 输入并实时转 HTML 渲染，**支持 ECharts 图表与自定义卡片（Vue/React 等）渲染**，同时提供字体/字号/颜色、表格样式、图片与链接等富文本能力。样式类均以 `yu-stream-editor` 为前缀，便于嵌入与主题隔离。",
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
